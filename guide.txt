@@ -1,0 +1,45 @@
+Texture-Patcher by Soartex Fanver
+=================================
+
+To the end user:
+
+Ignore this file, just double click and enjoy! If the patcher does not launch, tell the texture-artist that distributed it.
+
+=================================
+
+To the texture artist:
+
+Inside this jar, replace the contents of externalconfig.txt with the URL to your hosted configuration file.
+
+For example:
+
+http://mywebserver.com/patcherdata/config.properties
+
+This must start with the protocol (http://).
+
+---------------------------------
+
+The configuration file should look something like this:
+
+name=The name of your texture pack, this is used for the title of the window and the text for the menu-link. The absence of the line is the same as putting "Texture Patcher".
+url=Your texture pack's URL, this is used for menu-link button to this URL. This must start with the protocol (http://). If you do not have a website/want the menu-link, don't put this line.
+rooturl=The URL to the configuration data directory. This must start with the protocol (http://). The absence of this line results in an error.
+zipsurl=The URL to the mod .zip's. This must start with the protocol (http://). The absence of this line results in an error.
+
+Make sure there is no space between the id and the value, and no text after the value.
+
+And example configuration:
+
+name=A texture pack.
+url=http://mywebserver.com/
+rooturl=http://mywebserver.com/patcherdata/
+zipsurl=http://myfileserver.net/mods/
+
+---------------------------------
+
+This is how the configuration data directory should be laid out.
+
+.
+mods.csv (A .csv file containing a list of the mods the texture pack supports, in the format Name,Mod Version,Minecraft Version . For example: Industrial Craft 2,1.9,1.4.6 .
+modpacks.csv (A .csv containing a list of the modpacks you support, in the format Name,NameOfFile [See modpacks folder below]. For example, FTB Map Pack,ftbmappack.txt)
+/modpacks (A folder containing files for modpacks, each containing a list of the mods (same names as in mods.csv) that the modpack contains. You can leave this file out if you do not support any modpacks.)
