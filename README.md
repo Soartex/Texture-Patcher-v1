@@ -2,14 +2,7 @@
 
 ### _REDX36 Edition_
 
-### Features
-
-* Fully configurable for use with any texture pack.
-* Mod list, fetched from server.
-* User checks wanted mods.
-* User selects location of zip to patch.
-* User hits button, program downloads and extracts zips for mods from server.
-* Program patches specified zip with mod textures.
+See [our website](http://soartex-fanver.github.com/Texture-Patcher) for more information.
 
 * * *
 
