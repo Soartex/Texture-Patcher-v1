@@ -1,4 +1,4 @@
-## Texture Pack Patcher [![Build Status](https://secure.travis-ci.org/REDX36/Texture-Patcher.png?branch=master)](https://travis-ci.org/REDX36/Texture-Patcher)
+## Texture Pack Patcher [![Build Status](https://secure.travis-ci.org/Soartex-Fanver/Texture-Patcher.png?branch=master)](https://travis-ci.org/Soartex-Fanver/Texture-Patcher)
 
 ### _REDX36 Edition_
 
@@ -19,6 +19,6 @@ __This project is compatible with Java 6.__
 
 * * *
 
-[![Creative Commons License](http://i.creativecommons.org/l/by-sa/3.0/88x31.png)](http://creativecommons.org/licenses/by-sa/3.0/deed.en_US)
+[![Creative Commons License](http://i.creativecommons.org/l/by-sa/3.0/88x31.png)](http://creativecommons.org/licenses/by-nd/3.0/deed.en_US)
 
-This work is liscensed under [Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)](http://creativecommons.org/licenses/by-sa/3.0/deed.en_US).
+This work is liscensed under [Attribution-NoDerivs 3.0 Unported (CC BY-ND 3.0)](http://creativecommons.org/licenses/by-nd/3.0/deed.en_US).
