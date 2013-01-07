@@ -33,6 +33,8 @@ import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.SwingConstants;
+import javax.swing.UIManager;
+import javax.swing.UIManager.LookAndFeelInfo;
 import javax.swing.WindowConstants;
 
 public final class Texture_Patcher implements Runnable {
@@ -95,41 +97,19 @@ public final class Texture_Patcher implements Runnable {
 
 		try {
 
+			String readLine;
+
 			if (new File("externalconfig.txt").exists()) {
 
 				final BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream("externalconfig.txt")));
 
-				final String readLine = in.readLine();
+				readLine = in.readLine();
 
 				in.close();
 
-				if (readLine.startsWith("#")) {
-
-					JOptionPane.showMessageDialog(null, "externalconfig.txt file is the default!", "Error!", JOptionPane.ERROR_MESSAGE);
-
-					stopped = true;
-
-					return;
-
-				}
-
-				config.load(new URL(readLine).openStream());
-
 			} else if (getClass().getClassLoader().getResource("externalconfig.txt") != null) {
 
-				final String readLine = new BufferedReader(new InputStreamReader(getClass().getClassLoader().getResource("externalconfig.txt").openStream())).readLine();
-
-				if (readLine.startsWith("#")) {
-
-					JOptionPane.showMessageDialog(null, "externalconfig.txt file is the default!", "Error!", JOptionPane.ERROR_MESSAGE);
-
-					stopped = true;
-
-					return;
-
-				}
-
-				config.load(new URL(readLine).openStream());
+				readLine = new BufferedReader(new InputStreamReader(getClass().getClassLoader().getResource("externalconfig.txt").openStream())).readLine();
 
 			} else {
 
@@ -140,6 +120,18 @@ public final class Texture_Patcher implements Runnable {
 				return;
 
 			}
+
+			if (readLine.startsWith("#")) {
+
+				JOptionPane.showMessageDialog(null, "externalconfig.txt file is the default!", "Error!", JOptionPane.ERROR_MESSAGE);
+
+				stopped = true;
+
+				return;
+
+			}
+
+			config.load(new URL(readLine).openStream());
 
 			final String rooturl = config.getProperty("rooturl");
 
@@ -171,6 +163,46 @@ public final class Texture_Patcher implements Runnable {
 
 	protected void initializeWindow () {
 
+		if (config.getProperty("skin") != null) {
+
+			if (config.getProperty("skin").equals("native")) {
+
+				try {
+
+					UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+
+				} catch (final Exception e) {
+
+					e.printStackTrace();
+
+				}
+
+			} else {
+
+				try {
+
+					for (final LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+
+						if (info.getName().equalsIgnoreCase(config.getProperty("skin"))) {
+
+							UIManager.setLookAndFeel(info.getClassName());
+
+							break;
+
+						}
+
+					}
+
+				} catch (final Exception e) {
+
+					e.printStackTrace();
+
+				}
+
+			}
+
+		}
+
 		frame = new JFrame(config.getProperty("name") + (config.getProperty("name").equals("Texture Patcher") ? " v." : "Patcher v."  ) + VERSION);
 
 		frame.setLocation(50, 50);
@@ -178,13 +210,25 @@ public final class Texture_Patcher implements Runnable {
 		frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		frame.addWindowListener(new Listeners.ExitListener(this));
 
-		if (new File("icon.png").exists()) {
+		try {
 
-			frame.setIconImage(Toolkit.getDefaultToolkit().getImage("icon.png"));
+			final URL iconurl = new URL(config.getProperty("iconurl"));
 
-		} else if (getClass().getClassLoader().getResource("icon.png") != null) {
+			frame.setIconImage(Toolkit.getDefaultToolkit().createImage(iconurl));
 
-			frame.setIconImage(Toolkit.getDefaultToolkit().createImage(getClass().getClassLoader().getResource("icon.png")));
+		} catch (final Exception e) {
+
+			e.printStackTrace();
+
+			if (new File("icon.png").exists()) {
+
+				frame.setIconImage(Toolkit.getDefaultToolkit().getImage("icon.png"));
+
+			} else if (getClass().getClassLoader().getResource("icon.png") != null) {
+
+				frame.setIconImage(Toolkit.getDefaultToolkit().createImage(getClass().getClassLoader().getResource("icon.png")));
+
+			}
 
 		}
 
@@ -381,7 +425,7 @@ public final class Texture_Patcher implements Runnable {
 
 				try {
 
-					new URL(config.getProperty("rooturl") + "modpacks/" + readline.split(",")[1]).openStream();
+					new URL(config.getProperty("rooturl") + readline.split(",")[1]).openStream();
 
 				} catch (final IOException e) {
 
@@ -397,7 +441,7 @@ public final class Texture_Patcher implements Runnable {
 
 				}
 
-				modpacks.put(readline.split(",")[0], new URL(config.getProperty("rooturl") + "modpacks/" + readline.split(",")[1]));
+				modpacks.put(readline.split(",")[0], new URL(config.getProperty("rooturl") + readline.split(",")[1]));
 
 			}
 

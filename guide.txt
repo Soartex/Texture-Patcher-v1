@@ -22,6 +22,8 @@ This must start with the protocol (http://).
 The configuration file should look something like this:
 
 name=The name of your texture pack, this is used for the title of the window and the text for the menu-link. The absence of the line is the same as putting "Texture Patcher".
+iconurl=A URL to the icon to be used for the window and dialogs. Can be .png, .gif, or .jpg. Leave this line out for the default icon.
+skin=The name of the skin you wish to use, native for the native theme, or the name of the theme (uses the UIManager lookup). Leave this out for the default theme (Metal on Windows, native on OSX).
 url=Your texture pack's URL, this is used for menu-link button to this URL. This must start with the protocol (http://). If you do not have a website/want the menu-link, don't put this line.
 rooturl=The URL to the configuration data directory. This must start with the protocol (http://). The absence of this line results in an error.
 zipsurl=The URL to the mod .zip's. This must start with the protocol (http://). The absence of this line results in an error.
@@ -31,6 +33,8 @@ Make sure there is no space between the id and the value, and no text after the 
 And example configuration:
 
 name=A texture pack.
+iconurl=http://mywebserver.com/patcherdata/icon.png
+skin=Nimbus
 url=http://mywebserver.com/
 rooturl=http://mywebserver.com/patcherdata/
 zipsurl=http://myfileserver.net/mods/
@@ -41,5 +45,5 @@ This is how the configuration data directory should be laid out.
 
 .
 mods.csv (A .csv file containing a list of the mods the texture pack supports, in the format Name,Mod Version,Minecraft Version . For example: Industrial Craft 2,1.9,1.4.6 .
-modpacks.csv (A .csv containing a list of the modpacks you support, in the format Name,NameOfFile [See modpacks folder below]. For example, FTB Map Pack,ftbmappack.txt)
-/modpacks (A folder containing files for modpacks, each containing a list of the mods (same names as in mods.csv) that the modpack contains. You can leave this file out if you do not support any modpacks.)
+modpacks.csv (A .csv containing a list of the modpacks you support, in the format Name,NameOfFile [See modpacks folder below]. For example, FTB Map Pack,ftbmappack.txt . You can leave this file out if you do not support any modpacks.)
+modpack files (A file containg a list of each mod in the modpack. (Same file names as in mods.csv))
