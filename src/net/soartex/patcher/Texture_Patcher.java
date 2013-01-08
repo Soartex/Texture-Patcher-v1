@@ -39,7 +39,7 @@ import javax.swing.WindowConstants;
 
 public final class Texture_Patcher implements Runnable {
 
-	protected final float VERSION = 1.0F;
+	protected final float VERSION = 1.1F;
 
 	protected final Properties config = new Properties();
 
@@ -145,7 +145,7 @@ public final class Texture_Patcher implements Runnable {
 
 			}
 
-			config.put("versionurl", "http://soartex-fanver.github.com/Texture-Patcher/latestversion.txt");
+			config.put("versionurl", "http://soartex.net/patcher/texture-patcher/latestversion.txt");
 			config.put("modsurl", rooturl + "/mods.csv");
 			config.put("modpacksurl", rooturl + "/modpacks.csv");
 
@@ -203,7 +203,7 @@ public final class Texture_Patcher implements Runnable {
 
 		}
 
-		frame = new JFrame(config.getProperty("name") + (config.getProperty("name").equals("Texture Patcher") ? " v." : "Patcher v."  ) + VERSION);
+		frame = new JFrame(config.getProperty("name") + (config.getProperty("name").equals("Texture Patcher") ? " v." : " Patcher v."  ) + VERSION);
 
 		frame.setLocation(50, 50);
 
@@ -212,7 +212,7 @@ public final class Texture_Patcher implements Runnable {
 
 		try {
 
-			final URL iconurl = new URL(config.getProperty("iconurl"));
+			final URL iconurl = new URL(config.getProperty("iconurl") == null ? "http://soartex.net/patcher/texture-patcher/icon.png" : config.getProperty("iconurl"));
 
 			frame.setIconImage(Toolkit.getDefaultToolkit().createImage(iconurl));
 
@@ -282,6 +282,8 @@ public final class Texture_Patcher implements Runnable {
 		}
 
 		loadingFrame.dispose();
+
+		frame.requestFocus();
 
 	}
 

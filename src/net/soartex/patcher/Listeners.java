@@ -1,7 +1,7 @@
 package net.soartex.patcher;
 
 import java.awt.Desktop;
-
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
@@ -25,13 +25,16 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JProgressBar;
 import javax.swing.JTable;
+import javax.swing.SwingConstants;
 import javax.swing.WindowConstants;
 
 import javax.swing.event.MenuEvent;
@@ -250,8 +253,9 @@ final class Listeners {
 	protected static final class PatchListener implements ActionListener, Runnable {
 
 		protected final Texture_Patcher t_p;
+		protected ProgressDialog progressdialog;
 
-		protected final long time = System.currentTimeMillis();
+		protected long time;
 
 		protected final File TEMP_A = new File(getTMP() + File.separator + ".Texture_Patcher_Temp_A_" + time);
 		protected final File TEMP_B = new File(getTMP() + File.separator + ".Texture_Patcher_Temp_B_" + time);
@@ -283,44 +287,54 @@ final class Listeners {
 
 		@Override public void run () {
 
-			final ProgressDialog progress = new ProgressDialog();
+			time = System.currentTimeMillis();
 
-			progress.setString("Extracting texture pack...");
-			progress.setProgressValue(0);
+			progressdialog = new ProgressDialog();
 
-			progress.open();
+			progressdialog.setString("Extracting texture pack file (--/--)");
+			progressdialog.setProgressValue(0);
+
+			progressdialog.open();
 
 			extractTexturepack();
 
-			progress.setString("Downloading mods...");
-			progress.setProgressValue(25);
+			progressdialog.setString("Downloading  mod (--/--)");
+			progressdialog.setProgressValue(25);
 
 			downloadMods();
 
-			progress.setString("Extracting mods...");
-			progress.setProgressValue(50);
+			progressdialog.setString("Extracting  mod (--/--)");
+			progressdialog.setProgressValue(50);
 
 			extractMods();
 
-			progress.setString("Compiling texture pack...");
-			progress.setProgressValue(75);
+			progressdialog.setString("Compiling texture pack file (--/--)");
+			progressdialog.setProgressValue(75);
 
 			compileTexturepack();
 
-			progress.setString("Done!");
-			progress.setProgressValue(100);
+			progressdialog.setString("Done!");
+			progressdialog.setProgressValue(100);
+
+			delay(2500);
+
+			progressdialog.close();
+
+			t_p.frame.requestFocus();
+
+		}
+
+		protected void delay (final long time) {
 
 			try {
 
-				TimeUnit.MILLISECONDS.sleep(2500);
+				TimeUnit.MILLISECONDS.sleep(time);
 
 			} catch (final Exception e) {
 
 				e.printStackTrace();
 
 			}
-
-			progress.close();
 
 		}
 
@@ -335,6 +349,15 @@ final class Listeners {
 
 			try {
 
+				int count = 0;
+
+				final ZipFile zipfile = new ZipFile(t_p.selectedFile);
+
+				final int progressamount = zipfile.size();
+				int progresscount = 0;
+
+				zipfile.close();
+
 				final ZipInputStream zipin = new ZipInputStream(new FileInputStream(t_p.selectedFile));
 
 				ZipEntry zipEntry;
@@ -346,6 +369,8 @@ final class Listeners {
 					final String fileName = zipEntry.getName();
 					final File destinationFile = new File(TEMP_A.getAbsolutePath() + File.separator + fileName);
 
+					progressdialog.setString("Extracting texture pack file (" + ++count + "/" + progressamount + ")");
+
 					if (zipEntry.isDirectory()) {
 
 						new File(destinationFile.getParent()).mkdirs();
@@ -353,6 +378,8 @@ final class Listeners {
 					} else {
 
 						try {
+
+							System.out.println("Extracting: " + destinationFile.getAbsolutePath());
 
 							new File(destinationFile.getParent()).mkdirs();
 
@@ -373,6 +400,14 @@ final class Listeners {
 							e.printStackTrace();
 
 						}
+
+					}
+
+					if (++progresscount >= progressamount / 25) {
+
+						progressdialog.setProgressValue(progressdialog.getProgressValue() + 1);
+
+						progresscount = 0;
 
 					}
 
@@ -411,15 +446,34 @@ final class Listeners {
 
 			}
 
+			int count = 0;
+
+			final int progressamount = modslist.size() / 25;
+			int progresscount = 0;
+
 			for (final String mod : modslist) {
 
 				try {
 
 					final String modurl = t_p.config.getProperty("zipsurl") + mod.replace(" ", "_") + ".zip";
 
-					final InputStream in = new URL(modurl).openStream();
+					InputStream in;
+
+					try {
+
+						in = new URL(modurl).openStream();
+
+					} catch (final IOException e) {
+
+						e.printStackTrace();
+
+						in = new URL(modurl).openStream();
+
+					}
 
 					System.out.println("Downloading: " + mod);
+
+					progressdialog.setString("Downloading mod (" + ++count + "/" + modslist.size() + ")");
 
 					final File destinationFile = new File(TEMP_B.getAbsolutePath() + File.separator + new File(modurl).getName()).getAbsoluteFile();
 
@@ -443,6 +497,14 @@ final class Listeners {
 
 				}
 
+				if (++progresscount >= progressamount) {
+
+					progressdialog.setProgressValue(progressdialog.getProgressValue() + 1);
+
+					progresscount = 0;
+
+				}
+
 			}
 
 		}
@@ -453,9 +515,16 @@ final class Listeners {
 
 			getFiles(TEMP_B, files);
 
+			int count = 0;
+
+			final int progressamount = files.size() / 25;
+			int progresscount = 0;
+
 			for (final File file : files) {
 
 				System.out.println("Extracting: " + file.getName());
+
+				progressdialog.setString("Extracting mod (" + ++count + "/" + files.size() + ")");
 
 				try {
 
@@ -507,6 +576,14 @@ final class Listeners {
 				} catch (final IOException e) {
 
 					e.printStackTrace();
+
+				}
+
+				if (++progresscount >= progressamount) {
+
+					progressdialog.setProgressValue(progressdialog.getProgressValue() + 1);
+
+					progresscount = 0;
 
 				}
 
@@ -613,12 +690,14 @@ final class Listeners {
 
 			protected static final long serialVersionUID = 1L;
 
-			protected JFrame frame;
-			protected JProgressBar progress;
+			protected final JFrame frame;
+			protected final JProgressBar progress;
+			protected final JLabel status;
 
 			protected ProgressDialog () {
 
 				frame = new JFrame("Patching...");
+				frame.setLayout(new GridLayout(2,1));
 				frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 				frame.setIconImage(t_p.frame.getIconImage());
 
@@ -626,6 +705,9 @@ final class Listeners {
 				progress.setStringPainted(true);
 
 				frame.add(progress);
+
+				status = new JLabel("", SwingConstants.CENTER);
+				frame.add(status);
 
 				frame.setSize(250, 75);
 				frame.setResizable(false);
@@ -656,9 +738,15 @@ final class Listeners {
 
 			}
 
+			protected int getProgressValue () {
+
+				return progress.getValue();
+
+			}
+
 			protected void setString (final String value) {
 
-				progress.setString(value);
+				status.setText(value);
 
 			}
 
