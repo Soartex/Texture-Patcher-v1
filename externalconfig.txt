@@ -1,1 +1,1 @@
-http://soartex.net/patcher/red/config.properties
+# Put the URL of your hosted configuration file here!

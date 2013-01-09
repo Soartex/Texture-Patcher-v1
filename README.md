@@ -2,7 +2,7 @@
 
 ### _REDX36 Edition_
 
-See [our website](http://soartex-fanver.github.com/Texture-Patcher) for more information.
+See [our website](http://soartex.net/texture-patcher) for more information.
 
 * * *
 
