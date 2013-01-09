@@ -257,8 +257,8 @@ final class Listeners {
 
 		protected long time;
 
-		protected final File TEMP_A = new File(getTMP() + File.separator + ".Texture_Patcher_Temp_A_" + time);
-		protected final File TEMP_B = new File(getTMP() + File.separator + ".Texture_Patcher_Temp_B_" + time);
+		protected File TEMP_A;
+		protected File TEMP_B;
 
 		protected PatchListener (final Texture_Patcher t_p) {
 
@@ -289,6 +289,9 @@ final class Listeners {
 
 			time = System.currentTimeMillis();
 
+			TEMP_A = new File(getTMP() + File.separator + ".Texture_Patcher_Temp_A_" + time);
+			TEMP_B = new File(getTMP() + File.separator + ".Texture_Patcher_Temp_B_" + time);
+
 			progressdialog = new ProgressDialog();
 
 			progressdialog.setString("Extracting texture pack file (--/--)");
@@ -308,7 +311,7 @@ final class Listeners {
 
 			extractMods();
 
-			progressdialog.setString("Compiling texture pack file (--/--)");
+			progressdialog.setString("Compressing texture pack file (--/--)");
 			progressdialog.setProgressValue(75);
 
 			compileTexturepack();
@@ -608,12 +611,19 @@ final class Listeners {
 
 				final byte[] buffer = new byte[1024 * 1024];
 
+				int count = 0;
+
+				final int progressamount = files.size() / 25;
+				int progresscount = 0;
+
 				for (final File file : files) {
 
 					final String temp = file.getAbsolutePath().substring(file.getAbsolutePath().indexOf(TEMP_A.getName()), file.getAbsolutePath().length());
 					final String zipentrypath = temp.substring(temp.indexOf(File.separator) + 1, temp.length());
 
 					System.out.println("Compressing: " + zipentrypath);
+
+					progressdialog.setString("Compressing texture pack file (" + ++count + "/" + files.size() + ")");
 
 					final ZipEntry zipentry = new ZipEntry(zipentrypath);
 
@@ -632,6 +642,14 @@ final class Listeners {
 					in.close();
 
 					zipout.closeEntry();
+
+					if (++progresscount >= progressamount) {
+
+						progressdialog.setProgressValue(progressdialog.getProgressValue() + 1);
+
+						progresscount = 0;
+
+					}
 
 				}
 
