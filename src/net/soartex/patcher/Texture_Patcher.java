@@ -121,6 +121,9 @@ public final class Texture_Patcher implements Runnable {
 
 			}
 
+			// Used for testing.
+			// readLine = "http://soartex.net/texture-patcher/data/config.properties";
+
 			if (readLine.startsWith("#")) {
 
 				JOptionPane.showMessageDialog(null, "externalconfig.txt file is the default!", "Error!", JOptionPane.ERROR_MESSAGE);
@@ -145,7 +148,7 @@ public final class Texture_Patcher implements Runnable {
 
 			}
 
-			config.put("versionurl", "http://soartex.net/patcher/texture-patcher/latestversion.txt");
+			config.put("versionurl", "http://soartex.net/texture-patcher/latestversion.txt");
 			config.put("modsurl", rooturl + "/mods.csv");
 			config.put("modpacksurl", rooturl + "/modpacks.csv");
 
@@ -364,10 +367,7 @@ public final class Texture_Patcher implements Runnable {
 
 						} else {
 
-							if (size > 1024 && size < 1024 * 1024) itemtext[3] = size / 1024 + " kb";
-
-							else if (size > 1024 * 1024) itemtext[3] = size / (1024 * 1024) + " mb";
-
+							if (size > 1024) itemtext[3] = size / 1024 + " kb";
 							else itemtext[3] = String.valueOf(size) + " bytes";
 
 						}
