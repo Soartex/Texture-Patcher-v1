@@ -183,7 +183,7 @@ public final class Texture_Patcher implements Runnable {
 
 					for (final LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
 
-						if (info.getName().equalsIgnoreCase(config.getProperty("skin"))) {
+						if (info.getName().equalsIgnoreCase("Aqua") || info.getName().equalsIgnoreCase(config.getProperty("skin"))) {
 
 							UIManager.setLookAndFeel(info.getClassName());
 
@@ -314,7 +314,19 @@ public final class Texture_Patcher implements Runnable {
 
 				try {
 
-					final URLConnection connection = zipurl.openConnection();
+					URLConnection connection;;
+
+					try {
+
+						connection = zipurl.openConnection();
+
+					} catch (final IOException e) {
+
+						e.printStackTrace();
+
+						connection = zipurl.openConnection();
+
+					}
 
 					connection.getInputStream().close();
 
