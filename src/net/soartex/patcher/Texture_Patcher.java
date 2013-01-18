@@ -39,7 +39,7 @@ import javax.swing.WindowConstants;
 
 public final class Texture_Patcher implements Runnable {
 
-	protected final float VERSION = 1.1F;
+	protected final static float VERSION = 1.1F;
 
 	protected final Properties config = new Properties();
 
@@ -56,6 +56,9 @@ public final class Texture_Patcher implements Runnable {
 	protected File selectedFile;
 
 	public static void main (final String[] args) {
+
+		System.setProperty("apple.laf.useScreenMenuBar", "true");
+		System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Texture-Patcher v." + VERSION);
 
 		new Thread(new Texture_Patcher()).start();
 
@@ -186,7 +189,7 @@ public final class Texture_Patcher implements Runnable {
 
 					for (final LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
 
-						if (info.getName().equalsIgnoreCase("Aqua") || info.getName().equalsIgnoreCase(config.getProperty("skin"))) {
+						if (info.getName().equalsIgnoreCase(config.getProperty("skin"))) {
 
 							UIManager.setLookAndFeel(info.getClassName());
 
