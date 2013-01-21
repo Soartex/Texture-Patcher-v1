@@ -21,7 +21,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Properties;
 
-import javax.swing.Box;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -49,15 +48,15 @@ public final class Texture_Patcher implements Runnable {
 	protected boolean stopped = false;
 
 	protected JFrame frame;
-	protected JTextField path;
-	protected JTable table;
 	protected JFrame loadingFrame;
-	protected JMenuItem patchitem;
+
+	protected JTextField path;
+	protected JButton checkUpdate;
+	protected JButton patch;
+	protected JTable table;
 
 	protected Object[][] tableData;
 	protected HashMap<String, URL> modpacks;
-
-	protected File selectedFile;
 
 	public static void main (final String[] args) {
 
@@ -553,6 +552,7 @@ public final class Texture_Patcher implements Runnable {
 		gbc.insets = insets;
 
 		final JButton browse = new JButton("Browse");
+		browse.addActionListener(new Listeners.BrowseListener(this));
 
 		frame.add(browse, gbc);
 
@@ -567,7 +567,8 @@ public final class Texture_Patcher implements Runnable {
 		gbc.anchor = GridBagConstraints.NORTH;
 		gbc.insets = insets;
 
-		final JButton checkUpdate = new JButton("Check For Updates");
+		checkUpdate = new JButton("Check For Updates");
+		checkUpdate.setEnabled(false);
 
 		frame.add(checkUpdate, gbc);
 
@@ -582,7 +583,9 @@ public final class Texture_Patcher implements Runnable {
 		gbc.anchor = GridBagConstraints.NORTH;
 		gbc.insets = insets;
 
-		final JButton patch = new JButton("Patch");
+		patch = new JButton("Patch");
+		patch.addActionListener(new Listeners.PatchListener(this));
+		patch.setEnabled(false);
 
 		frame.add(patch, gbc);
 
@@ -609,15 +612,17 @@ public final class Texture_Patcher implements Runnable {
 
 		final JMenuBar menubar = new JMenuBar();
 
+		final JMenu menu = new JMenu("File");
+
 		if (config.getProperty("url") != null) {
 
-			final JMenu website = new JMenu(config.getProperty("name") + " Website");
-			website.addMenuListener(new Listeners.WebsiteListener(this));
-			menubar.add(website);
+			final JMenuItem website = new JMenuItem(config.getProperty("name") + " Website");
+			website.addActionListener(new Listeners.WebsiteListener(this));
+			menu.add(website);
 
 		}
 
-		final JMenu modpacksmenu = new JMenu("Modpacks");
+		menu.addSeparator();
 
 		final ButtonGroup group = new ButtonGroup();
 
@@ -629,46 +634,29 @@ public final class Texture_Patcher implements Runnable {
 			modpacksitems.setSelected(false);
 			modpacksitems.addActionListener(new Listeners.ModpackListener(this));
 			group.add(modpacksitems);
-			modpacksmenu.add(modpacksitems);
+			menu.add(modpacksitems);
 
 		}
 
 		JRadioButtonMenuItem selectitems;
 
-		if (!modpacks.isEmpty()) modpacksmenu.addSeparator();
+		if (!modpacks.isEmpty()) menu.addSeparator();
 
 		selectitems = new JRadioButtonMenuItem("Select All");
 		selectitems.setSelected(false);
 		selectitems.addActionListener(new Listeners.ModpackListener(this));
 
 		group.add(selectitems);
-		modpacksmenu.add(selectitems);
+		menu.add(selectitems);
 
 		selectitems = new JRadioButtonMenuItem("Select None");
 		selectitems.setSelected(true);
 		selectitems.addActionListener(new Listeners.ModpackListener(this));
 
 		group.add(selectitems);
-		modpacksmenu.add(selectitems);
+		menu.add(selectitems);
 
-		menubar.add(modpacksmenu);
-
-		menubar.add(Box.createHorizontalGlue());
-
-		final JMenu patchmenu = new JMenu("Patch");
-
-		final JMenuItem browseitem = new JMenuItem("Browse");
-		browseitem.addActionListener(new Listeners.BrowseListener(this));
-		patchmenu.add(browseitem);
-
-		patchmenu.addSeparator();
-
-		patchitem = new JMenuItem("Patch");
-		patchitem.addActionListener(new Listeners.PatchListener(this));
-		patchitem.setEnabled(false);
-		patchmenu.add(patchitem);
-
-		menubar.add(patchmenu);
+		menubar.add(menu);
 
 		frame.setJMenuBar(menubar);
 

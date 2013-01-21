@@ -1,7 +1,9 @@
 package net.soartex.patcher;
 
 import java.awt.Desktop;
-import java.awt.GridLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
@@ -36,9 +38,6 @@ import javax.swing.JProgressBar;
 import javax.swing.JTable;
 import javax.swing.SwingConstants;
 import javax.swing.WindowConstants;
-
-import javax.swing.event.MenuEvent;
-import javax.swing.event.MenuListener;
 
 import javax.swing.filechooser.FileFilter;
 
@@ -83,7 +82,7 @@ final class Listeners {
 
 	}
 
-	protected static final class WebsiteListener implements MenuListener {
+	protected static final class WebsiteListener implements ActionListener {
 
 		protected final Texture_Patcher t_p;
 
@@ -93,9 +92,7 @@ final class Listeners {
 
 		}
 
-		@Override public void menuCanceled (final MenuEvent e) {}
-
-		@Override public void menuDeselected (final MenuEvent e) {
+		@Override public void actionPerformed (final ActionEvent e) {
 
 			try {
 
@@ -108,8 +105,6 @@ final class Listeners {
 			}
 
 		}
-
-		@Override public void menuSelected (final MenuEvent e) {}
 
 	}
 
@@ -226,9 +221,10 @@ final class Listeners {
 
 			final File file = fileChooser.getSelectedFile();
 
-			t_p.selectedFile = file;
+			t_p.path.setText(file.getAbsolutePath());
 
-			t_p.patchitem.setEnabled(true);
+			t_p.checkUpdate.setEnabled(true);
+			t_p.patch.setEnabled(true);
 
 		}
 
@@ -359,14 +355,14 @@ final class Listeners {
 
 				int count = 0;
 
-				final ZipFile zipfile = new ZipFile(t_p.selectedFile);
+				final ZipFile zipfile = new ZipFile(new File(t_p.path.getText()));
 
 				final int progressamount = zipfile.size();
 				int progresscount = 0;
 
 				zipfile.close();
 
-				final ZipInputStream zipin = new ZipInputStream(new FileInputStream(t_p.selectedFile));
+				final ZipInputStream zipin = new ZipInputStream(new FileInputStream(new File(t_p.path.getText())));
 
 				ZipEntry zipEntry;
 
@@ -611,10 +607,10 @@ final class Listeners {
 
 			try {
 
-				final FileOutputStream out = new FileOutputStream(t_p.selectedFile);
+				final FileOutputStream out = new FileOutputStream(new File(t_p.path.getText()));
 				final ZipOutputStream zipout = new ZipOutputStream(out);
 
-				System.out.println("Compiling zip: " + t_p.selectedFile.getAbsolutePath());
+				System.out.println("Compiling zip: " + new File(t_p.path.getText()).getAbsolutePath());
 
 				final ArrayList<File> files = new ArrayList<File>();
 
@@ -726,17 +722,41 @@ final class Listeners {
 			protected ProgressDialog () {
 
 				frame = new JFrame("Patching...");
-				frame.setLayout(new GridLayout(2,1));
+				frame.setLayout(new GridBagLayout());
 				frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 				frame.setIconImage(t_p.frame.getIconImage());
+
+				final Insets insets = new Insets(2, 2, 1, 2);
+
+				GridBagConstraints gbc = new GridBagConstraints();
+
+				gbc.gridx = 0;
+				gbc.gridy = 0;
+				gbc.gridwidth = 1;
+				gbc.weightx = 1;
+				gbc.weighty = 1;
+				gbc.fill = GridBagConstraints.HORIZONTAL;
+				gbc.anchor = GridBagConstraints.NORTH;
+				gbc.insets = insets;
 
 				progress = new JProgressBar();
 				progress.setStringPainted(true);
 
-				frame.add(progress);
+				frame.add(progress, gbc);
+
+				gbc = new GridBagConstraints();
+
+				gbc.gridx = 0;
+				gbc.gridy = 1;
+				gbc.gridwidth = 1;
+				gbc.weightx = 1;
+				gbc.weighty = 1;
+				gbc.fill = GridBagConstraints.HORIZONTAL;
+				gbc.anchor = GridBagConstraints.NORTH;
+				gbc.insets = insets;
 
 				status = new JLabel("", SwingConstants.CENTER);
-				frame.add(status);
+				frame.add(status, gbc);
 
 				frame.setSize(250, 75);
 				frame.setResizable(false);
