@@ -1,7 +1,8 @@
 package net.soartex.patcher;
 
-import java.awt.BorderLayout;
-import java.awt.GridLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.Toolkit;
 
 import java.io.BufferedReader;
@@ -22,6 +23,7 @@ import java.util.Properties;
 
 import javax.swing.Box;
 import javax.swing.ButtonGroup;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -32,6 +34,7 @@ import javax.swing.JProgressBar;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.UIManager.LookAndFeelInfo;
@@ -39,13 +42,14 @@ import javax.swing.WindowConstants;
 
 public final class Texture_Patcher implements Runnable {
 
-	protected final static float VERSION = 1.1F;
+	protected final static float VERSION = 1.2F;
 
 	protected final Properties config = new Properties();
 
 	protected boolean stopped = false;
 
 	protected JFrame frame;
+	protected JTextField path;
 	protected JTable table;
 	protected JFrame loadingFrame;
 	protected JMenuItem patchitem;
@@ -125,7 +129,7 @@ public final class Texture_Patcher implements Runnable {
 			}
 
 			// Used for testing.
-			// readLine = "http://soartex.net/texture-patcher/data/config.properties";
+			readLine = "http://soartex.net/texture-patcher/data/config.properties";
 
 			if (readLine.startsWith("#")) {
 
@@ -210,6 +214,7 @@ public final class Texture_Patcher implements Runnable {
 		}
 
 		frame = new JFrame(config.getProperty("name") + (config.getProperty("name").equals("Texture Patcher") ? " v." : " Patcher v."  ) + VERSION);
+		frame.setLayout(new GridBagLayout());
 
 		frame.setLocation(50, 50);
 
@@ -243,21 +248,67 @@ public final class Texture_Patcher implements Runnable {
 	protected void loadFiles () {
 
 		loadingFrame = new JFrame("Loading files...");
-		loadingFrame.setLayout(new GridLayout(4,1));
+		loadingFrame.setLayout(new GridBagLayout());
+
+		final Insets insets = new Insets(2, 2, 1, 2);
+
+		GridBagConstraints gbc = new GridBagConstraints();
+
+		gbc.gridx = 0;
+		gbc.gridy = 0;
+		gbc.gridwidth = 1;
+		gbc.weightx = 1;
+		gbc.weighty = 1;
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.anchor = GridBagConstraints.NORTH;
+		gbc.insets = insets;
 
 		final JProgressBar progress = new JProgressBar(SwingConstants.HORIZONTAL);
 
 		progress.setIndeterminate(true);
-		loadingFrame.add(progress, BorderLayout.NORTH);
+		loadingFrame.add(progress, gbc);
+
+		gbc = new GridBagConstraints();
+
+		gbc.gridx = 0;
+		gbc.gridy = 1;
+		gbc.gridwidth = 1;
+		gbc.weightx = 1;
+		gbc.weighty = 1;
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.anchor = GridBagConstraints.NORTH;
+		gbc.insets = insets;
 
 		final JLabel message = new JLabel("Please wait patiently while we load your files...", SwingConstants.CENTER);
-		loadingFrame.add(message);
+		loadingFrame.add(message, gbc);
+
+		gbc = new GridBagConstraints();
+
+		gbc.gridx = 0;
+		gbc.gridy = 2;
+		gbc.gridwidth = 1;
+		gbc.weightx = 1;
+		gbc.weighty = 1;
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.anchor = GridBagConstraints.NORTH;
+		gbc.insets = insets;
 
 		final JLabel modMessage = new JLabel("Loading mod # 0", SwingConstants.CENTER);
-		loadingFrame.add(modMessage);
+		loadingFrame.add(modMessage, gbc);
+
+		gbc = new GridBagConstraints();
+
+		gbc.gridx = 0;
+		gbc.gridy = 3;
+		gbc.gridwidth = 1;
+		gbc.weightx = 1;
+		gbc.weighty = 1;
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.anchor = GridBagConstraints.NORTH;
+		gbc.insets = insets;
 
 		final JLabel modName = new JLabel("--", SwingConstants.CENTER);
-		loadingFrame.add(modName);
+		loadingFrame.add(modName,gbc);
 
 		loadingFrame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		loadingFrame.addWindowListener(new Listeners.ExitListener(this));
@@ -472,6 +523,80 @@ public final class Texture_Patcher implements Runnable {
 
 	protected void initializeComponents () {
 
+		final Insets insets = new Insets(1, 3, 1, 3);
+
+		GridBagConstraints gbc = new GridBagConstraints();
+
+		gbc.gridx = 0;
+		gbc.gridy = 0;
+		gbc.gridwidth = 3;
+		gbc.weightx = 3;
+		gbc.weighty = 0;
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.anchor = GridBagConstraints.NORTH;
+		gbc.insets = insets;
+
+		path = new JTextField();
+		path.setEditable(false);
+
+		frame.add(path, gbc);
+
+		gbc = new GridBagConstraints();
+
+		gbc.gridx = 0;
+		gbc.gridy = 1;
+		gbc.gridwidth = 1;
+		gbc.weightx = 1;
+		gbc.weighty = 0;
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.anchor = GridBagConstraints.NORTH;
+		gbc.insets = insets;
+
+		final JButton browse = new JButton("Browse");
+
+		frame.add(browse, gbc);
+
+		gbc = new GridBagConstraints();
+
+		gbc.gridx = 1;
+		gbc.gridy = 1;
+		gbc.gridwidth = 1;
+		gbc.weightx = 1;
+		gbc.weighty = 0;
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.anchor = GridBagConstraints.NORTH;
+		gbc.insets = insets;
+
+		final JButton checkUpdate = new JButton("Check For Updates");
+
+		frame.add(checkUpdate, gbc);
+
+		gbc = new GridBagConstraints();
+
+		gbc.gridx = 2;
+		gbc.gridy = 1;
+		gbc.gridwidth = 1;
+		gbc.weightx = 1;
+		gbc.weighty = 0;
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.anchor = GridBagConstraints.NORTH;
+		gbc.insets = insets;
+
+		final JButton patch = new JButton("Patch");
+
+		frame.add(patch, gbc);
+
+		gbc = new GridBagConstraints();
+
+		gbc.gridx = 0;
+		gbc.gridy = 2;
+		gbc.gridwidth = 3;
+		gbc.weightx = 3;
+		gbc.weighty = 1;
+		gbc.fill = GridBagConstraints.BOTH;
+		gbc.anchor = GridBagConstraints.NORTH;
+		gbc.insets = insets;
+
 		table = new JTable(new TableModel(tableData));
 		table.setFillsViewportHeight(true);
 
@@ -480,7 +605,7 @@ public final class Texture_Patcher implements Runnable {
 		table.getColumnModel().getColumn(0).setMaxWidth(25);
 		table.addMouseListener(new Listeners.TableListener(table, this));
 
-		frame.add(new JScrollPane(table));
+		frame.add(new JScrollPane(table), gbc);
 
 		final JMenuBar menubar = new JMenuBar();
 

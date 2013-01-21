@@ -301,6 +301,11 @@ final class Listeners {
 
 			extractTexturepack();
 
+			progressdialog.setString("Compiling mods list...");
+			progressdialog.setProgressValue(25);
+
+			compileModsList();
+
 			progressdialog.setString("Downloading  mod (--/--)");
 			progressdialog.setProgressValue(25);
 
@@ -423,6 +428,12 @@ final class Listeners {
 				e.printStackTrace();
 
 			}
+
+		}
+
+		protected void compileModsList () {
+
+
 
 		}
 
