@@ -18,10 +18,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 
 import java.net.URI;
 import java.net.URL;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 
 import java.util.concurrent.TimeUnit;
@@ -34,6 +36,7 @@ import java.util.zip.ZipOutputStream;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
 import javax.swing.JTable;
 import javax.swing.SwingConstants;
@@ -246,6 +249,219 @@ final class Listeners {
 
 	}
 
+	protected static final class CheckUpdateListener implements ActionListener, Runnable {
+
+		protected final Texture_Patcher t_p;
+
+		protected long time;
+
+		protected File TEMP_C;
+
+		protected CheckUpdateListener (final Texture_Patcher t_p) {
+
+			this.t_p = t_p;
+
+		}
+
+		@Override public void actionPerformed (final ActionEvent e) {
+
+			new Thread(this).start();
+
+		}
+
+		@Override public void run () {
+
+			time = System.currentTimeMillis();
+
+			TEMP_C = new File(getTMP() + File.separator + ".Texture_Patcher_Temp_C_" + time);
+
+			extractTexturepack();
+
+			checkUpdate();
+
+			delete(TEMP_C);
+
+		}
+
+		protected String getTMP () {
+
+			final String OS = System.getProperty("os.name").toUpperCase();
+
+			if (OS.contains("WIN")) return System.getenv("TMP");
+
+			else if (OS.contains("MAC") || OS.contains("DARWIN")) return System.getProperty("user.home") + "/Library/Caches/";
+			else if (OS.contains("NUX")) return System.getProperty("user.home");
+
+			return System.getProperty("user.dir");
+
+		}
+
+		protected void extractTexturepack () {
+
+			delete(TEMP_C);
+
+			TEMP_C.delete();
+			TEMP_C.deleteOnExit();
+
+			TEMP_C.mkdirs();
+
+			try {
+
+				final ZipInputStream zipin = new ZipInputStream(new FileInputStream(new File(t_p.path.getText())));
+
+				ZipEntry zipEntry;
+
+				final byte[] buffer = new byte[1024 * 1024];
+
+				while ((zipEntry = zipin.getNextEntry()) != null) {
+
+					final String fileName = zipEntry.getName();
+					final File destinationFile = new File(TEMP_C.getAbsolutePath() + File.separator + fileName);
+
+					if (!destinationFile.getName().equals("modslist.csv")) continue;
+
+					if (zipEntry.isDirectory()) {
+
+						new File(destinationFile.getParent()).mkdirs();
+
+					} else {
+
+						try {
+
+							System.out.println("Extracting: " + destinationFile.getAbsolutePath());
+
+							new File(destinationFile.getParent()).mkdirs();
+
+							final FileOutputStream out = new FileOutputStream(destinationFile);
+
+							int length;
+
+							while ((length = zipin.read(buffer, 0, buffer.length)) > -1) {
+
+								out.write(buffer, 0, length);
+
+							}
+
+							out.close();
+
+						} catch (final Exception e) {
+
+							e.printStackTrace();
+
+						}
+
+					}
+				}
+
+				zipin.close();
+
+			} catch (final IOException e) {
+
+				e.printStackTrace();
+
+			}
+
+		}
+
+		protected void checkUpdate () {
+
+			final File modslist = new File(TEMP_C, "modslist.csv");
+
+			if (modslist.exists()) {
+
+				try {
+
+					final ArrayList<String> updates = new ArrayList<String>();
+
+					final BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(modslist)));
+
+					String readline;
+
+					while ((readline = in.readLine()) != null) {
+
+						for (final Object[] row : t_p.tableData) {
+
+							if (readline.split(",")[0].equals(row[1])) {
+
+								final long olddate = new SimpleDateFormat("MM/dd/yyyy").parse(readline.split(",")[1]).getTime();
+								final long newdate = new SimpleDateFormat("MM/dd/yyyy").parse((String) row[5]).getTime();
+
+								if (olddate < newdate) updates.add((String) row[1]);
+
+							}
+
+						}
+
+					}
+
+					in.close();
+
+					if (updates.isEmpty()) JOptionPane.showMessageDialog(t_p.frame, "No updates are avaible for the mods you have already patched!", "No updates!", JOptionPane.INFORMATION_MESSAGE);
+
+					else {
+
+						final int option = JOptionPane.showConfirmDialog(t_p.frame, "Updates are available!" + "\r\n" + "Do you want to have them selected on the table?", "Updates!", JOptionPane.YES_NO_OPTION);
+
+						if (option == JOptionPane.YES_OPTION) {
+
+							selectUpdated(updates);
+
+						}
+
+					}
+
+				} catch (final Exception e) {
+
+					e.printStackTrace();
+
+				}
+
+			} else {
+
+				JOptionPane.showMessageDialog(t_p.frame, "This texture-pack has never been patched before!", "Warning!", JOptionPane.WARNING_MESSAGE);
+
+			}
+
+		}
+
+		protected void selectUpdated (final ArrayList<String> updates) {
+
+			for (final String mod : updates) {
+
+				for (final Object[] row : t_p.tableData) {
+
+					if (mod.equals(row[1])) row[0] = true;
+
+				}
+
+			}
+
+			t_p.table.updateUI();
+
+		}
+
+		protected void delete (final File f) {
+
+			f.delete();
+
+			if (f.isFile()) return;
+
+			final File[] files = f.getAbsoluteFile().listFiles();
+
+			if (files == null) return;
+
+			for (final File file : files) {
+
+				delete(file);
+
+				f.delete();
+
+			}
+
+		}
+
+	}
+
 	protected static final class PatchListener implements ActionListener, Runnable {
 
 		protected final Texture_Patcher t_p;
@@ -429,7 +645,69 @@ final class Listeners {
 
 		protected void compileModsList () {
 
+			final File modslist = new File(TEMP_A, "modslist.csv");
 
+			String modslistcontents = "";
+
+			if (modslist.exists()) {
+
+				try {
+
+					final BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(modslist)));
+
+					String readline;
+
+					reading: while ((readline = in.readLine()) != null) {
+
+						rowing: for (final Object[] row : t_p.tableData) {
+
+							if ((Boolean) row[0] == false) continue rowing;
+
+							if (readline.split(",")[0].equals(row[1])) {
+
+								continue reading;
+
+							}
+
+						}
+
+					modslistcontents = modslistcontents.concat(readline + getLineSeparator());
+
+					}
+
+					in.close();
+
+				} catch (final IOException e) {
+
+					e.printStackTrace();
+
+				}
+
+			}
+
+			for (final Object[] row : t_p.tableData) {
+
+				if ((Boolean) row[0] == false) continue;
+
+				modslistcontents = modslistcontents.concat((String) row[1] + "," + (String) row[5] + getLineSeparator());
+
+			}
+
+			modslistcontents = modslistcontents.trim();
+
+			try {
+
+				final PrintWriter out = new PrintWriter(new FileOutputStream(modslist));
+
+				out.print(modslistcontents);
+
+				out.close();
+
+			} catch (final IOException e) {
+
+				e.printStackTrace();
+
+			}
 
 		}
 
@@ -673,7 +951,17 @@ final class Listeners {
 
 		}
 
-		protected static void getFiles (final File f, final ArrayList<File> files) {
+		protected String getLineSeparator () {
+
+			final String OS = System.getProperty("os.name").toUpperCase();
+
+			if (OS.contains("WIN")) return "\r\n";
+
+			else return "\n";
+
+		}
+
+		protected void getFiles (final File f, final ArrayList<File> files) {
 
 			if (f.isFile()) return;
 

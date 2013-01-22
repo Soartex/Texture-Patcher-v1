@@ -127,7 +127,7 @@ public final class Texture_Patcher implements Runnable {
 
 			}
 
-			// Used for testing.
+			// TODO: Used for testing.
 			// readLine = "http://soartex.net/texture-patcher/data/config.properties";
 
 			if (readLine.startsWith("#")) {
@@ -346,7 +346,6 @@ public final class Texture_Patcher implements Runnable {
 	protected Object[][] loadTable (final JLabel modMessage, final JLabel modTitle) {
 
 		final ArrayList<String[]> itemsInfo = new ArrayList<String[]>();
-		final ArrayList<String> itemsInfoUrl = new ArrayList<String>();
 
 		try {
 
@@ -442,7 +441,6 @@ public final class Texture_Patcher implements Runnable {
 					}
 
 					itemsInfo.add(itemtext);
-					itemsInfoUrl.add(zipurl.toString());
 
 					modMessage.setText("Loading mod # " + count++);
 					modTitle.setText(itemtext[0]);
@@ -568,6 +566,7 @@ public final class Texture_Patcher implements Runnable {
 		gbc.insets = insets;
 
 		checkUpdate = new JButton("Check For Updates");
+		checkUpdate.addActionListener(new Listeners.CheckUpdateListener(this));
 		checkUpdate.setEnabled(false);
 
 		frame.add(checkUpdate, gbc);
