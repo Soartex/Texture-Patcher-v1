@@ -128,7 +128,7 @@ public final class Texture_Patcher implements Runnable {
 			}
 
 			// Used for testing.
-			readLine = "http://soartex.net/texture-patcher/data/config.properties";
+			// readLine = "http://soartex.net/texture-patcher/data/config.properties";
 
 			if (readLine.startsWith("#")) {
 
@@ -366,7 +366,7 @@ public final class Texture_Patcher implements Runnable {
 
 				}
 
-				final URL zipurl = new URL(config.getProperty("zipsurl") + readline.split(",")[0].replace(" ", "_") + ".zip");
+				final URL zipurl = new URL(config.getProperty("zipsurl") + readline.split(",")[0].replace(" ", "") + ".zip");
 
 				try {
 
@@ -396,7 +396,7 @@ public final class Texture_Patcher implements Runnable {
 
 					final String[] itemtext = new String[5];
 
-					itemtext[0] = split[0];
+					itemtext[0] = split[0].replace(" ", "").replace("_", " ");
 
 					if (split.length == 1) {
 
@@ -405,8 +405,8 @@ public final class Texture_Patcher implements Runnable {
 
 					} else {
 
-						itemtext[1] = split[1];
-						itemtext[2] = split[2];
+						itemtext[1] = split[1].replace(" ", "");
+						itemtext[2] = split[2].replace(" ", "");
 
 					}
 
