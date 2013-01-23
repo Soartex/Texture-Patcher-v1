@@ -1,4 +1,4 @@
-package net.soartex.patcher;
+package net.soartex.texture_patcher;
 
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Properties;
+import java.util.prefs.Preferences;
 
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
@@ -41,8 +42,9 @@ import javax.swing.WindowConstants;
 
 public final class Texture_Patcher implements Runnable {
 
-	protected final static float VERSION = 1.2F;
+	protected final static float VERSION = 1.0F;
 
+	protected final Preferences prefsnode = Preferences.userNodeForPackage(Texture_Patcher.class);
 	protected final Properties config = new Properties();
 
 	protected boolean stopped = false;
@@ -533,7 +535,8 @@ public final class Texture_Patcher implements Runnable {
 		gbc.anchor = GridBagConstraints.NORTH;
 		gbc.insets = insets;
 
-		path = new JTextField();
+		path = new JTextField(prefsnode.get("path", ""));
+
 		path.setEditable(false);
 
 		frame.add(path, gbc);
@@ -587,6 +590,13 @@ public final class Texture_Patcher implements Runnable {
 		patch.setEnabled(false);
 
 		frame.add(patch, gbc);
+
+		if (!path.getText().equals("")) {
+
+			checkUpdate.setEnabled(true);
+			patch.setEnabled(true);
+
+		}
 
 		gbc = new GridBagConstraints();
 

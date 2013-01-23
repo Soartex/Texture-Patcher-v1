@@ -1,4 +1,4 @@
-package net.soartex.patcher;
+package net.soartex.texture_patcher;
 
 import java.awt.Desktop;
 import java.awt.GridBagConstraints;
@@ -228,6 +228,8 @@ final class Listeners {
 
 			t_p.checkUpdate.setEnabled(true);
 			t_p.patch.setEnabled(true);
+
+			t_p.prefsnode.put("path", file.getAbsolutePath());
 
 		}
 
@@ -910,7 +912,7 @@ final class Listeners {
 
 					progressdialog.setString("Compressing texture pack file (" + ++count + "/" + files.size() + ")");
 
-					final ZipEntry zipentry = new ZipEntry(zipentrypath);
+					final ZipEntry zipentry = new ZipEntry(zipentrypath.replace("\\", "/"));
 
 					zipout.putNextEntry(zipentry);
 

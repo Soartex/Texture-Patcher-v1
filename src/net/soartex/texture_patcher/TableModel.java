@@ -1,4 +1,4 @@
-package net.soartex.patcher;
+package net.soartex.texture_patcher;
 
 import javax.swing.table.AbstractTableModel;
 
