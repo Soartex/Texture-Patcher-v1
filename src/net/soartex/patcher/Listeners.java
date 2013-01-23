@@ -169,7 +169,7 @@ final class Listeners {
 
 									try {
 
-										if (readline.equals(t_p.tableData[i][1])) {
+										if (readline.replace(" ", "").replace("_", " ").equals(t_p.tableData[i][1])) {
 
 											t_p.tableData[i][0] = true;
 

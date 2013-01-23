@@ -506,7 +506,7 @@ public final class Texture_Patcher implements Runnable {
 
 				}
 
-				modpacks.put(readline.split(",")[0], new URL(config.getProperty("rooturl") + readline.split(",")[1]));
+				modpacks.put(readline.split(",")[0].replace(" ", "").replace("_", " "), new URL(config.getProperty("rooturl") + readline.split(",")[1].replace(" ", "")));
 
 			}
 
