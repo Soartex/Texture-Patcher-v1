@@ -594,7 +594,7 @@ public final class Texture_Patcher implements Runnable {
 
 		frame.add(patch, gbc);
 
-		if (!path.getText().equals("")) {
+		if (!path.getText().equals("") && new File(path.getText()).exists()) {
 
 			checkUpdate.setEnabled(true);
 			patch.setEnabled(true);
