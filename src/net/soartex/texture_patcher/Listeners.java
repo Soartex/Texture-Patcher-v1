@@ -220,6 +220,26 @@ final class Listeners {
 			fileChooser.setAcceptAllFileFilterUsed(false);
 			fileChooser.setFileFilter(new ZipFileFilter());
 
+			final File lastDir = new File(t_p.prefsnode.get("lastDir", System.getProperty("user.dir")));
+
+			if (lastDir.exists()) {
+
+				fileChooser.setCurrentDirectory(lastDir);
+
+			} else {
+
+				fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
+
+				t_p.path.setText("");
+
+				t_p.checkUpdate.setEnabled(false);
+				t_p.patch.setEnabled(false);
+
+				t_p.prefsnode.remove("path");
+				t_p.prefsnode.remove("lastDir");
+
+			}
+
 			if (fileChooser.showOpenDialog(t_p.frame) != JFileChooser.APPROVE_OPTION) return;
 
 			final File file = fileChooser.getSelectedFile();
@@ -230,6 +250,7 @@ final class Listeners {
 			t_p.patch.setEnabled(true);
 
 			t_p.prefsnode.put("path", file.getAbsolutePath());
+			t_p.prefsnode.put("lastDir", file.getParent());
 
 		}
 

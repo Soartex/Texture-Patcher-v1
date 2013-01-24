@@ -48,6 +48,7 @@ public final class Texture_Patcher implements Runnable {
 	protected final Properties config = new Properties();
 
 	protected boolean stopped = false;
+	protected static boolean debug = false;
 
 	protected JFrame frame;
 	protected JFrame loadingFrame;
@@ -64,6 +65,8 @@ public final class Texture_Patcher implements Runnable {
 
 		System.setProperty("apple.laf.useScreenMenuBar", "true");
 		System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Texture-Patcher v." + VERSION);
+
+		if (args.length > 0 && Boolean.parseBoolean(args[0])) debug = true;
 
 		new Thread(new Texture_Patcher()).start();
 
@@ -130,7 +133,7 @@ public final class Texture_Patcher implements Runnable {
 			}
 
 			// TODO: Used for testing.
-			// readLine = "http://soartex.net/texture-patcher/data/config.properties";
+			if (debug) readLine = "http://soartex.net/texture-patcher/data/config.properties";
 
 			if (readLine.startsWith("#")) {
 
