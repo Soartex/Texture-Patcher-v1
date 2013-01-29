@@ -19,6 +19,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.prefs.Preferences;
 
@@ -40,12 +41,14 @@ import javax.swing.UIManager;
 import javax.swing.UIManager.LookAndFeelInfo;
 import javax.swing.WindowConstants;
 
+import org.json.simple.parser.JSONParser;
+
 public final class Texture_Patcher implements Runnable {
 
-	protected final static float VERSION = 1.0F;
+	protected final static float VERSION = 1.1F;
 
 	protected final Preferences prefsnode = Preferences.userNodeForPackage(Texture_Patcher.class);
-	protected final Properties config = new Properties();
+	protected HashMap<String, String> config = new HashMap<String, String>();
 
 	protected boolean stopped = false;
 	protected static boolean debug = false;
@@ -104,7 +107,7 @@ public final class Texture_Patcher implements Runnable {
 
 	}
 
-	protected void loadConfig () {
+	@SuppressWarnings({ "unchecked", "rawtypes" }) protected void loadConfig () {
 
 		try {
 
@@ -133,7 +136,7 @@ public final class Texture_Patcher implements Runnable {
 			}
 
 			// TODO: Used for testing.
-			if (debug) readLine = "http://soartex.net/texture-patcher/data/config.properties";
+			if (debug) readLine = "http://soartex.net/texture-patcher/data/config.json";
 
 			if (readLine.startsWith("#")) {
 
@@ -145,11 +148,25 @@ public final class Texture_Patcher implements Runnable {
 
 			}
 
-			config.load(new URL(readLine).openStream());
+			if (readLine.endsWith(".json") || readLine.endsWith(".JSON")) {
 
-			final String rooturl = config.getProperty("rooturl");
+				config = (HashMap) new JSONParser().parse(new InputStreamReader(new URL(readLine).openStream()));
 
-			if (rooturl == null || config.getProperty("zipsurl") == null) {
+			} else {
+
+				final Properties props = new Properties();
+
+				props.load(new URL(readLine).openStream());
+
+				config.putAll((Map) props);
+
+				System.out.println(config.get("rooturl"));
+
+			}
+
+			final String rooturl = config.get("rooturl");
+
+			if (rooturl == null || config.get("zipsurl") == null) {
 
 				JOptionPane.showMessageDialog(null, "The configuration file is incomplete!", "Error!", JOptionPane.ERROR_MESSAGE);
 
@@ -163,9 +180,9 @@ public final class Texture_Patcher implements Runnable {
 			config.put("modsurl", rooturl + "/mods.csv");
 			config.put("modpacksurl", rooturl + "/modpacks.csv");
 
-			if (config.getProperty("name") == null) config.put("name", "Texture Patcher");
+			if (config.get("name") == null) config.put("name", "Texture Patcher");
 
-		} catch (final IOException e) {
+		} catch (final Exception e) {
 
 			e.printStackTrace();
 
@@ -177,9 +194,9 @@ public final class Texture_Patcher implements Runnable {
 
 	protected void initializeWindow () {
 
-		if (config.getProperty("skin") != null) {
+		if (config.get("skin") != null) {
 
-			if (config.getProperty("skin").equals("native")) {
+			if (config.get("skin").equals("native")) {
 
 				try {
 
@@ -197,7 +214,7 @@ public final class Texture_Patcher implements Runnable {
 
 					for (final LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
 
-						if (info.getName().equalsIgnoreCase(config.getProperty("skin"))) {
+						if (info.getName().equalsIgnoreCase(config.get("skin"))) {
 
 							UIManager.setLookAndFeel(info.getClassName());
 
@@ -217,7 +234,7 @@ public final class Texture_Patcher implements Runnable {
 
 		}
 
-		frame = new JFrame(config.getProperty("name") + (config.getProperty("name").equals("Texture Patcher") ? " v." : " Patcher v."  ) + VERSION);
+		frame = new JFrame(config.get("name") + (config.get("name").equals("Texture Patcher") ? " v." : " Patcher v."  ) + VERSION);
 		frame.setLayout(new GridBagLayout());
 
 		frame.setLocation(50, 50);
@@ -227,7 +244,7 @@ public final class Texture_Patcher implements Runnable {
 
 		try {
 
-			final URL iconurl = new URL(config.getProperty("iconurl") == null ? "http://soartex.net/patcher/texture-patcher/icon.png" : config.getProperty("iconurl"));
+			final URL iconurl = new URL(config.get("iconurl") == null ? "http://soartex.net/patcher/texture-patcher/icon.png" : config.get("iconurl"));
 
 			frame.setIconImage(Toolkit.getDefaultToolkit().createImage(iconurl));
 
@@ -354,7 +371,7 @@ public final class Texture_Patcher implements Runnable {
 
 		try {
 
-			final URL tabledata = new URL(config.getProperty("modsurl"));
+			final URL tabledata = new URL(config.get("modsurl"));
 
 			final BufferedReader in = new BufferedReader(new InputStreamReader(tabledata.openStream()));
 
@@ -370,7 +387,7 @@ public final class Texture_Patcher implements Runnable {
 
 				}
 
-				final URL zipurl = new URL(config.getProperty("zipsurl") + readline.split(",")[0].replace(" ", "") + ".zip");
+				final URL zipurl = new URL(config.get("zipsurl") + readline.split(",")[0].replace(" ", "") + ".zip");
 
 				try {
 
@@ -485,7 +502,7 @@ public final class Texture_Patcher implements Runnable {
 
 		try {
 
-			final URL modpacksurl = new URL(config.getProperty("modpacksurl"));
+			final URL modpacksurl = new URL(config.get("modpacksurl"));
 
 			final BufferedReader in = new BufferedReader(new InputStreamReader(modpacksurl.openStream()));
 
@@ -495,7 +512,7 @@ public final class Texture_Patcher implements Runnable {
 
 				try {
 
-					new URL(config.getProperty("rooturl") + readline.split(",")[1]).openStream();
+					new URL(config.get("rooturl") + readline.split(",")[1]).openStream();
 
 				} catch (final IOException e) {
 
@@ -511,7 +528,7 @@ public final class Texture_Patcher implements Runnable {
 
 				}
 
-				modpacks.put(readline.split(",")[0].replace(" ", "").replace("_", " "), new URL(config.getProperty("rooturl") + readline.split(",")[1].replace(" ", "")));
+				modpacks.put(readline.split(",")[0].replace(" ", "").replace("_", " "), new URL(config.get("rooturl") + readline.split(",")[1].replace(" ", "")));
 
 			}
 
@@ -626,9 +643,9 @@ public final class Texture_Patcher implements Runnable {
 
 		final JMenu menu = new JMenu("File");
 
-		if (config.getProperty("url") != null) {
+		if (config.get("url") != null) {
 
-			final JMenuItem website = new JMenuItem(config.getProperty("name") + " Website");
+			final JMenuItem website = new JMenuItem(config.get("name") + " Website");
 			website.addActionListener(new Listeners.WebsiteListener(this));
 			menu.add(website);
 
@@ -686,7 +703,7 @@ public final class Texture_Patcher implements Runnable {
 
 		try {
 
-			final URL versionurl = new URL(config.getProperty("versionurl"));
+			final URL versionurl = new URL(config.get("versionurl"));
 
 			final float latestversion = Float.parseFloat(new BufferedReader(new InputStreamReader(versionurl.openStream())).readLine());
 

@@ -99,7 +99,7 @@ final class Listeners {
 
 			try {
 
-				Desktop.getDesktop().browse(new URI(t_p.config.getProperty("url")));
+				Desktop.getDesktop().browse(new URI(t_p.config.get("url")));
 
 			} catch (final Exception e1) {
 
@@ -485,6 +485,22 @@ final class Listeners {
 
 	}
 
+	protected static final class DownloadPackListener implements ActionListener, Runnable {
+
+		@Override public void actionPerformed (final ActionEvent e) {
+
+
+
+		}
+
+		@Override public void run () {
+
+
+
+		}
+
+	}
+
 	protected static final class PatchListener implements ActionListener, Runnable {
 
 		protected final Texture_Patcher t_p;
@@ -766,7 +782,7 @@ final class Listeners {
 
 				try {
 
-					final String modurl = t_p.config.getProperty("zipsurl") + mod.replace(" ", "_") + ".zip";
+					final String modurl = t_p.config.get("zipsurl") + mod.replace(" ", "_") + ".zip";
 
 					InputStream in;
 
