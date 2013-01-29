@@ -548,8 +548,8 @@ public final class Texture_Patcher implements Runnable {
 
 		gbc.gridx = 0;
 		gbc.gridy = 0;
-		gbc.gridwidth = 3;
-		gbc.weightx = 3;
+		gbc.gridwidth = 4;
+		gbc.weightx = 4;
 		gbc.weighty = 0;
 		gbc.fill = GridBagConstraints.HORIZONTAL;
 		gbc.anchor = GridBagConstraints.NORTH;
@@ -588,6 +588,22 @@ public final class Texture_Patcher implements Runnable {
 		gbc.anchor = GridBagConstraints.NORTH;
 		gbc.insets = insets;
 
+		final JButton downloadPack = new JButton("Download Pack");
+		downloadPack.addActionListener(new Listeners.DownloadPackListener(this));
+
+		frame.add(downloadPack, gbc);
+
+		gbc = new GridBagConstraints();
+
+		gbc.gridx = 2;
+		gbc.gridy = 1;
+		gbc.gridwidth = 1;
+		gbc.weightx = 1;
+		gbc.weighty = 0;
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.anchor = GridBagConstraints.NORTH;
+		gbc.insets = insets;
+
 		checkUpdate = new JButton("Check For Updates");
 		checkUpdate.addActionListener(new Listeners.CheckUpdateListener(this));
 		checkUpdate.setEnabled(false);
@@ -596,7 +612,7 @@ public final class Texture_Patcher implements Runnable {
 
 		gbc = new GridBagConstraints();
 
-		gbc.gridx = 2;
+		gbc.gridx = 3;
 		gbc.gridy = 1;
 		gbc.gridwidth = 1;
 		gbc.weightx = 1;
@@ -616,14 +632,18 @@ public final class Texture_Patcher implements Runnable {
 			checkUpdate.setEnabled(true);
 			patch.setEnabled(true);
 
+		} else {
+
+			path.setText("");
+
 		}
 
 		gbc = new GridBagConstraints();
 
 		gbc.gridx = 0;
 		gbc.gridy = 2;
-		gbc.gridwidth = 3;
-		gbc.weightx = 3;
+		gbc.gridwidth = 4;
+		gbc.weightx = 4;
 		gbc.weighty = 1;
 		gbc.fill = GridBagConstraints.BOTH;
 		gbc.anchor = GridBagConstraints.NORTH;

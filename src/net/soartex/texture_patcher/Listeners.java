@@ -22,6 +22,7 @@ import java.io.PrintWriter;
 
 import java.net.URI;
 import java.net.URL;
+import java.net.URLConnection;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -272,6 +273,159 @@ final class Listeners {
 
 	}
 
+	protected static final class DownloadPackListener implements ActionListener, Runnable {
+
+		protected final Texture_Patcher t_p;
+
+		protected ProgressDialog progressdialog;
+
+		protected File file;
+
+		protected DownloadPackListener (final Texture_Patcher t_p) {
+
+			this.t_p = t_p;
+
+		}
+
+		@Override public void actionPerformed (final ActionEvent e) {
+
+			if (t_p.config.get("packurl") == null) {
+
+				JOptionPane.showMessageDialog(t_p.frame, "The texture-artist has not provided a URL for a pack to download!", "Error!", JOptionPane.ERROR_MESSAGE);
+
+				return;
+
+			}
+
+			if (!openBrowseDialog()) return;
+
+			new Thread(this).start();
+
+		}
+
+		protected boolean openBrowseDialog () {
+
+			final JFileChooser fileChooser = new JFileChooser();
+
+			fileChooser.setAcceptAllFileFilterUsed(false);
+			fileChooser.setFileFilter(new BrowseListener(t_p).new ZipFileFilter());
+
+			final File lastDir = new File(t_p.prefsnode.get("lastDir", System.getProperty("user.dir")));
+
+			if (lastDir.exists()) {
+
+				fileChooser.setCurrentDirectory(lastDir);
+
+			} else {
+
+				fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
+
+				t_p.prefsnode.remove("lastDir");
+
+			}
+
+			if (fileChooser.showSaveDialog(t_p.frame) != JFileChooser.APPROVE_OPTION) return false;
+
+			if (fileChooser.getSelectedFile().getAbsolutePath().endsWith(".zip")) {
+
+				file = fileChooser.getSelectedFile().getAbsoluteFile();
+
+			} else {
+
+				file = new File(fileChooser.getSelectedFile().getParent(), fileChooser.getSelectedFile().getName() + ".zip");
+
+			}
+
+			return true;
+
+		}
+
+		@Override public void run () {
+
+			progressdialog = new ProgressDialog(t_p);
+
+			progressdialog.setProgressValue(0);
+			progressdialog.setString("Downloading texture-pack...");
+
+			progressdialog.open();
+
+			try {
+
+				final URL packurl = new URL(t_p.config.get("packurl"));
+
+				int size = 0;
+
+				final byte[] buffer = new byte[1024 * 1024];
+
+				InputStream in;
+
+				try {
+
+					final URLConnection connection = packurl.openConnection();
+
+					in = connection.getInputStream();
+
+					size = connection.getContentLength() / 1024;
+
+				} catch (final IOException e) {
+
+					e.printStackTrace();
+
+					final URLConnection connection = packurl.openConnection();
+
+					in = connection.getInputStream();
+
+				}
+
+				System.out.println("Downloading: " + t_p.config.get("packurl"));
+
+				final int progressamount = size / 102400;
+				int progresscount = 0;
+
+				file.getParentFile().mkdirs();
+
+				final FileOutputStream out = new FileOutputStream(file);
+
+				int length;
+
+				while ((length = in.read(buffer, 0, buffer.length)) > -1) {
+
+					out.write(buffer, 0, length);
+
+					if (++progresscount >= progressamount) {
+
+						progressdialog.setProgressValue(progressdialog.getProgressValue() + 1);
+
+						progresscount = 0;
+
+					}
+
+				}
+
+				out.close();
+
+			} catch (final Exception e) {
+
+				e.printStackTrace();
+
+			}
+
+			progressdialog.close();
+
+			t_p.path.setText(file.getAbsolutePath());
+
+			t_p.checkUpdate.setEnabled(true);
+			t_p.patch.setEnabled(true);
+
+			t_p.prefsnode.put("path", file.getAbsolutePath());
+			t_p.prefsnode.put("lastDir", file.getParent());
+
+			t_p.frame.requestFocus();
+
+		}
+
+	}
+
 	protected static final class CheckUpdateListener implements ActionListener, Runnable {
 
 		protected final Texture_Patcher t_p;
@@ -485,22 +639,6 @@ final class Listeners {
 
 	}
 
-	protected static final class DownloadPackListener implements ActionListener, Runnable {
-
-		@Override public void actionPerformed (final ActionEvent e) {
-
-
-
-		}
-
-		@Override public void run () {
-
-
-
-		}
-
-	}
-
 	protected static final class PatchListener implements ActionListener, Runnable {
 
 		protected final Texture_Patcher t_p;
@@ -543,7 +681,7 @@ final class Listeners {
 			TEMP_A = new File(getTMP() + File.separator + ".Texture_Patcher_Temp_A_" + time);
 			TEMP_B = new File(getTMP() + File.separator + ".Texture_Patcher_Temp_B_" + time);
 
-			progressdialog = new ProgressDialog();
+			progressdialog = new ProgressDialog(t_p);
 
 			progressdialog.setString("Extracting texture pack file (--/--)");
 			progressdialog.setProgressValue(0);
@@ -575,7 +713,7 @@ final class Listeners {
 			progressdialog.setString("Done!");
 			progressdialog.setProgressValue(100);
 
-			delay(2500);
+			delay(1500);
 
 			progressdialog.close();
 
@@ -1038,96 +1176,6 @@ final class Listeners {
 
 		}
 
-		protected final class ProgressDialog {
-
-			protected static final long serialVersionUID = 1L;
-
-			protected final JFrame frame;
-			protected final JProgressBar progress;
-			protected final JLabel status;
-
-			protected ProgressDialog () {
-
-				frame = new JFrame("Patching...");
-				frame.setLayout(new GridBagLayout());
-				frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-				frame.setIconImage(t_p.frame.getIconImage());
-
-				final Insets insets = new Insets(2, 2, 1, 2);
-
-				GridBagConstraints gbc = new GridBagConstraints();
-
-				gbc.gridx = 0;
-				gbc.gridy = 0;
-				gbc.gridwidth = 1;
-				gbc.weightx = 1;
-				gbc.weighty = 1;
-				gbc.fill = GridBagConstraints.HORIZONTAL;
-				gbc.anchor = GridBagConstraints.NORTH;
-				gbc.insets = insets;
-
-				progress = new JProgressBar();
-				progress.setStringPainted(true);
-
-				frame.add(progress, gbc);
-
-				gbc = new GridBagConstraints();
-
-				gbc.gridx = 0;
-				gbc.gridy = 1;
-				gbc.gridwidth = 1;
-				gbc.weightx = 1;
-				gbc.weighty = 1;
-				gbc.fill = GridBagConstraints.HORIZONTAL;
-				gbc.anchor = GridBagConstraints.NORTH;
-				gbc.insets = insets;
-
-				status = new JLabel("", SwingConstants.CENTER);
-				frame.add(status, gbc);
-
-				frame.setSize(250, 75);
-				frame.setResizable(false);
-
-				frame.setLocationRelativeTo(t_p.frame);
-
-			}
-
-			protected void open () {
-
-				t_p.frame.setEnabled(false);
-
-				frame.setVisible(true);
-
-			}
-
-			protected void close () {
-
-				frame.dispose();
-
-				t_p.frame.setEnabled(true);
-
-			}
-
-			protected void setProgressValue (final int value) {
-
-				progress.setValue(value);
-
-			}
-
-			protected int getProgressValue () {
-
-				return progress.getValue();
-
-			}
-
-			protected void setString (final String value) {
-
-				status.setText(value);
-
-			}
-
-		}
-
 	}
 
 	protected static final class ExitListener implements WindowListener {
@@ -1163,6 +1211,100 @@ final class Listeners {
 		@Override public void windowIconified (final WindowEvent arg0) {}
 
 		@Override public void windowOpened (final WindowEvent arg0) {}
+
+	}
+
+	protected static final class ProgressDialog {
+
+		protected final Texture_Patcher t_p;
+
+		protected static final long serialVersionUID = 1L;
+
+		protected final JFrame frame;
+		protected final JProgressBar progress;
+		protected final JLabel status;
+
+		protected ProgressDialog (final Texture_Patcher t_p) {
+
+			this.t_p = t_p;
+
+			frame = new JFrame("Patching...");
+			frame.setLayout(new GridBagLayout());
+			frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+			frame.setIconImage(t_p.frame.getIconImage());
+
+			final Insets insets = new Insets(2, 2, 1, 2);
+
+			GridBagConstraints gbc = new GridBagConstraints();
+
+			gbc.gridx = 0;
+			gbc.gridy = 0;
+			gbc.gridwidth = 1;
+			gbc.weightx = 1;
+			gbc.weighty = 1;
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.anchor = GridBagConstraints.NORTH;
+			gbc.insets = insets;
+
+			progress = new JProgressBar();
+			progress.setStringPainted(true);
+
+			frame.add(progress, gbc);
+
+			gbc = new GridBagConstraints();
+
+			gbc.gridx = 0;
+			gbc.gridy = 1;
+			gbc.gridwidth = 1;
+			gbc.weightx = 1;
+			gbc.weighty = 1;
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.anchor = GridBagConstraints.NORTH;
+			gbc.insets = insets;
+
+			status = new JLabel("", SwingConstants.CENTER);
+			frame.add(status, gbc);
+
+			frame.setSize(250, 75);
+			frame.setResizable(false);
+
+			frame.setLocationRelativeTo(t_p.frame);
+
+		}
+
+		protected void open () {
+
+			t_p.frame.setEnabled(false);
+
+			frame.setVisible(true);
+
+		}
+
+		protected void close () {
+
+			frame.dispose();
+
+			t_p.frame.setEnabled(true);
+
+		}
+
+		protected void setProgressValue (final int value) {
+
+			progress.setValue(value);
+
+		}
+
+		protected int getProgressValue () {
+
+			return progress.getValue();
+
+		}
+
+		protected void setString (final String value) {
+
+			status.setText(value);
+
+		}
 
 	}
 
