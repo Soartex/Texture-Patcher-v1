@@ -7,7 +7,7 @@ import java.awt.Toolkit;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
@@ -42,6 +42,7 @@ import javax.swing.UIManager.LookAndFeelInfo;
 import javax.swing.WindowConstants;
 
 import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 public final class Texture_Patcher implements Runnable {
 
@@ -50,7 +51,6 @@ public final class Texture_Patcher implements Runnable {
 	protected final Preferences prefsnode = Preferences.userNodeForPackage(Texture_Patcher.class);
 	protected HashMap<String, String> config = new HashMap<String, String>();
 
-	protected boolean stopped = false;
 	protected static boolean debug = false;
 
 	protected JFrame frame;
@@ -69,7 +69,7 @@ public final class Texture_Patcher implements Runnable {
 		System.setProperty("apple.laf.useScreenMenuBar", "true");
 		System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Texture-Patcher v." + VERSION);
 
-		if (args.length > 0 && Boolean.parseBoolean(args[0])) debug = true;
+		debug = Boolean.parseBoolean(args.length > 0 ? args[0] : "");
 
 		new Thread(new Texture_Patcher()).start();
 
@@ -77,74 +77,69 @@ public final class Texture_Patcher implements Runnable {
 
 	@Override public void run () {
 
-		loadConfig();
-
-		if (stopped) return;
-
-		initializeWindow();
-
-		if (stopped) return;
-
-		loadFiles();
-
-		if (stopped) return;
-
-		loadModpacks();
-
-		if (stopped) return;
-
-		initializeComponents();
-
-		if (stopped) return;
-
-		open();
-
-		if (stopped) return;
-
-		checkUpdate();
-
-		if (stopped) return;
-
-	}
-
-	@SuppressWarnings({ "unchecked", "rawtypes" }) protected void loadConfig () {
-
 		try {
 
-			String readLine;
+			loadConfig();
 
-			if (new File("externalconfig.txt").exists()) {
+		} catch (final Texture_Patcher_Exception e) {
 
-				final BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream("externalconfig.txt")));
+			e.printStackTrace();
 
-				readLine = in.readLine();
-
-				in.close();
-
-			} else if (getClass().getClassLoader().getResource("externalconfig.txt") != null) {
-
-				readLine = new BufferedReader(new InputStreamReader(getClass().getClassLoader().getResource("externalconfig.txt").openStream())).readLine();
-
-			} else {
-
-				JOptionPane.showMessageDialog(null, "No externalconfig.txt file!", "Error!", JOptionPane.ERROR_MESSAGE);
-
-				stopped = true;
+			if (e.getType().isFatal()) {
 
 				return;
 
 			}
 
-			// TODO: Used for testing.
+		}
+
+		initializeWindow();
+
+		if (loadFiles()) return;
+
+		loadModpacks();
+
+		initializeComponents();
+
+		open();
+
+		checkUpdate();
+
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" }) protected void loadConfig () throws Texture_Patcher_Exception {
+
+		try {
+
+			String readLine;
+
+			// Find external config file, first by class loader resource, then by the file system.
+
+			if (getClass().getClassLoader().getResource("externalconfig.txt") != null) {
+
+				readLine = new BufferedReader(new InputStreamReader(getClass().getClassLoader().getResource("externalconfig.txt").openStream())).readLine();
+
+			} else {
+
+				// TODO: Consolidate
+				JOptionPane.showMessageDialog(null, "No externalconfig.txt file!", "Error!", JOptionPane.ERROR_MESSAGE);
+
+				throw new Texture_Patcher_Exception(ErrorType.NO_EXTERNAL_CONFIG, null);
+
+			}
+
+			// DEBUG: Used for testing.
+
 			if (debug) readLine = "http://soartex.net/texture-patcher/data/config.json";
+
+			// Checks if the external config is the default.
 
 			if (readLine.startsWith("#")) {
 
+				// TODO: Consolidate
 				JOptionPane.showMessageDialog(null, "externalconfig.txt file is the default!", "Error!", JOptionPane.ERROR_MESSAGE);
 
-				stopped = true;
-
-				return;
+				throw new Texture_Patcher_Exception(ErrorType.BAD_EXTERNAL_CONFIG, null);
 
 			}
 
@@ -160,21 +155,18 @@ public final class Texture_Patcher implements Runnable {
 
 				config.putAll((Map) props);
 
-				System.out.println(config.get("rooturl"));
+			}
+
+			if (config.get("rooturl") == null || config.get("zipsurl") == null) {
+
+				// TODO: Consolidate
+				JOptionPane.showMessageDialog(null, "The configuration file is incomplete!", "Error!", JOptionPane.ERROR_MESSAGE);
+
+				throw new Texture_Patcher_Exception(ErrorType.INCOMPLETE_CONFIG, null);
 
 			}
 
 			final String rooturl = config.get("rooturl");
-
-			if (rooturl == null || config.get("zipsurl") == null) {
-
-				JOptionPane.showMessageDialog(null, "The configuration file is incomplete!", "Error!", JOptionPane.ERROR_MESSAGE);
-
-				stopped = true;
-
-				return;
-
-			}
 
 			config.put("versionurl", "http://soartex.net/texture-patcher/latestversion.txt");
 			config.put("modsurl", rooturl + "/mods.csv");
@@ -182,11 +174,17 @@ public final class Texture_Patcher implements Runnable {
 
 			if (config.get("name") == null) config.put("name", "Texture Patcher");
 
-		} catch (final Exception e) {
+		} catch (final FileNotFoundException e) {
 
-			e.printStackTrace();
+			throw new Texture_Patcher_Exception(ErrorType.CONFIG_NOT_FOUND, e);
 
-			stopped = true;
+		} catch (final IOException e) {
+
+			throw new Texture_Patcher_Exception(ErrorType.NO_INTERNET, e);
+
+		} catch (final ParseException e) {
+
+			throw new Texture_Patcher_Exception(ErrorType.BAD_CONFIG, e);
 
 		}
 
@@ -266,7 +264,7 @@ public final class Texture_Patcher implements Runnable {
 
 	}
 
-	protected void loadFiles () {
+	protected boolean loadFiles () {
 
 		loadingFrame = new JFrame("Loading files...");
 		loadingFrame.setLayout(new GridBagLayout());
@@ -344,6 +342,8 @@ public final class Texture_Patcher implements Runnable {
 
 		final Object[][] temp = loadTable(modMessage, modName);
 
+		if (!loadingFrame.isVisible()) return true;
+
 		tableData = new Object[temp.length][];
 
 		for (int i = 0; i < temp.length; i++) {
@@ -362,6 +362,8 @@ public final class Texture_Patcher implements Runnable {
 		loadingFrame.dispose();
 
 		frame.requestFocus();
+
+		return false;
 
 	}
 

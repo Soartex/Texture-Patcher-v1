@@ -1200,8 +1200,6 @@ final class Listeners {
 			t_p.frame.setVisible(false);
 			t_p.frame.dispose();
 
-			t_p.stopped = true;
-
 		}
 
 		@Override public void windowDeactivated (final WindowEvent arg0) {}
