@@ -11,6 +11,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 
@@ -19,8 +20,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
 import java.util.prefs.Preferences;
 
 import javax.swing.ButtonGroup;
@@ -81,90 +80,80 @@ public final class Texture_Patcher implements Runnable {
 
 			loadConfig();
 
+			initializeWindow();
+
+			loadFiles();
+
+			loadModpacks();
+
+			initializeComponents();
+
+			open();
+
+			try {
+
+				checkUpdate();
+
+			} catch (final Texture_Patcher_Exception e) {
+
+				e.printStackTrace();
+
+				e.showMessageDialog("Error!", JOptionPane.ERROR_MESSAGE);
+
+			}
+
 		} catch (final Texture_Patcher_Exception e) {
 
 			e.printStackTrace();
 
-			if (e.getType().isFatal()) {
+			if (e.getType() != ErrorType.WINDOW_CLOSED) e.showMessageDialog("Error!", JOptionPane.ERROR_MESSAGE);
 
-				return;
+			if (frame != null) frame.dispose();
 
-			}
+			return;
 
 		}
 
-		initializeWindow();
-
-		if (loadFiles()) return;
-
-		loadModpacks();
-
-		initializeComponents();
-
-		open();
-
-		checkUpdate();
-
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" }) protected void loadConfig () throws Texture_Patcher_Exception {
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	protected void loadConfig () throws Texture_Patcher_Exception {
 
 		try {
 
-			String readLine;
+			String readLine = "";
 
 			// Find external config file, first by class loader resource, then by the file system.
 
-			if (getClass().getClassLoader().getResource("externalconfig.txt") != null) {
+			if (getClass().getClassLoader().getResource("externalconfig.txt") != null)
 
 				readLine = new BufferedReader(new InputStreamReader(getClass().getClassLoader().getResource("externalconfig.txt").openStream())).readLine();
 
-			} else {
+			else if (!debug)
 
-				// TODO: Consolidate
-				JOptionPane.showMessageDialog(null, "No externalconfig.txt file!", "Error!", JOptionPane.ERROR_MESSAGE);
-
-				throw new Texture_Patcher_Exception(ErrorType.NO_EXTERNAL_CONFIG, null);
-
-			}
+				throw new Texture_Patcher_Exception(this, ErrorType.NO_EXTERNAL_CONFIG, null);
 
 			// DEBUG: Used for testing.
 
 			if (debug) readLine = "http://soartex.net/texture-patcher/data/config.json";
 
-			// Checks if the external config is the default.
+			// Checks if the externalconfig.txt is the default.
 
-			if (readLine.startsWith("#")) {
+			if (readLine.startsWith("#"))
 
-				// TODO: Consolidate
-				JOptionPane.showMessageDialog(null, "externalconfig.txt file is the default!", "Error!", JOptionPane.ERROR_MESSAGE);
+				throw new Texture_Patcher_Exception(this, ErrorType.DEFAULT_EXTERNAL_CONFIG, null);
 
-				throw new Texture_Patcher_Exception(ErrorType.BAD_EXTERNAL_CONFIG, null);
+			// Loads the JSON file.
 
-			}
+			config = (HashMap) new JSONParser().parse(new InputStreamReader(new URL(readLine).openStream()));
 
-			if (readLine.endsWith(".json") || readLine.endsWith(".JSON")) {
+			// Checks if the root or zips URLs are missing.
 
-				config = (HashMap) new JSONParser().parse(new InputStreamReader(new URL(readLine).openStream()));
+			if (config.get("rooturl") == null || config.get("zipsurl") == null)
 
-			} else {
+				throw new Texture_Patcher_Exception(this, ErrorType.INCOMPLETE_CONFIG, null);
 
-				final Properties props = new Properties();
-
-				props.load(new URL(readLine).openStream());
-
-				config.putAll((Map) props);
-
-			}
-
-			if (config.get("rooturl") == null || config.get("zipsurl") == null) {
-
-				// TODO: Consolidate
-				JOptionPane.showMessageDialog(null, "The configuration file is incomplete!", "Error!", JOptionPane.ERROR_MESSAGE);
-
-				throw new Texture_Patcher_Exception(ErrorType.INCOMPLETE_CONFIG, null);
-
-			}
+			// Resolves file URLs based on the root URL.
 
 			final String rooturl = config.get("rooturl");
 
@@ -174,17 +163,27 @@ public final class Texture_Patcher implements Runnable {
 
 			if (config.get("name") == null) config.put("name", "Texture Patcher");
 
+			// Determine errors.
+
 		} catch (final FileNotFoundException e) {
 
-			throw new Texture_Patcher_Exception(ErrorType.CONFIG_NOT_FOUND, e);
+			throw new Texture_Patcher_Exception(this, ErrorType.CONFIG_NOT_FOUND, e);
+
+		} catch (final MalformedURLException e) {
+
+			throw new Texture_Patcher_Exception(this, ErrorType.BAD_EXTERNAL_CONFIG, e);
 
 		} catch (final IOException e) {
 
-			throw new Texture_Patcher_Exception(ErrorType.NO_INTERNET, e);
+			throw new Texture_Patcher_Exception(this, ErrorType.NO_INTERNET, e);
 
 		} catch (final ParseException e) {
 
-			throw new Texture_Patcher_Exception(ErrorType.BAD_CONFIG, e);
+			throw new Texture_Patcher_Exception(this, ErrorType.BAD_CONFIG, e);
+
+		} catch (final Exception e) {
+
+			throw new Texture_Patcher_Exception(this, ErrorType.UNKNOWN_ERROR, e);
 
 		}
 
@@ -192,23 +191,15 @@ public final class Texture_Patcher implements Runnable {
 
 	protected void initializeWindow () {
 
-		if (config.get("skin") != null) {
+		try {
 
-			if (config.get("skin").equals("native")) {
+			if (config.get("skin") != null) {
 
-				try {
+				if (config.get("skin").equals("native")) {
 
 					UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 
-				} catch (final Exception e) {
-
-					e.printStackTrace();
-
-				}
-
-			} else {
-
-				try {
+				} else {
 
 					for (final LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
 
@@ -222,13 +213,17 @@ public final class Texture_Patcher implements Runnable {
 
 					}
 
-				} catch (final Exception e) {
-
-					e.printStackTrace();
-
 				}
 
 			}
+
+		} catch (final Exception e) {
+
+			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.SETTING_SKIN_FAILED, e);
+
+			t_p_e.printStackTrace();
+
+			t_p_e.showMessageDialog("Warning!", JOptionPane.WARNING_MESSAGE);
 
 		}
 
@@ -264,7 +259,7 @@ public final class Texture_Patcher implements Runnable {
 
 	}
 
-	protected boolean loadFiles () {
+	protected void loadFiles () throws Texture_Patcher_Exception {
 
 		loadingFrame = new JFrame("Loading files...");
 		loadingFrame.setLayout(new GridBagLayout());
@@ -342,7 +337,7 @@ public final class Texture_Patcher implements Runnable {
 
 		final Object[][] temp = loadTable(modMessage, modName);
 
-		if (!loadingFrame.isVisible()) return true;
+		if (!loadingFrame.isVisible()) throw new Texture_Patcher_Exception(this, ErrorType.WINDOW_CLOSED, null);
 
 		tableData = new Object[temp.length][];
 
@@ -362,8 +357,6 @@ public final class Texture_Patcher implements Runnable {
 		loadingFrame.dispose();
 
 		frame.requestFocus();
-
-		return false;
 
 	}
 
@@ -721,7 +714,7 @@ public final class Texture_Patcher implements Runnable {
 
 	}
 
-	protected void checkUpdate () {
+	protected void checkUpdate () throws Texture_Patcher_Exception {
 
 		try {
 
@@ -737,9 +730,11 @@ public final class Texture_Patcher implements Runnable {
 
 		} catch (final IOException e) {
 
-			e.printStackTrace();
+			throw new Texture_Patcher_Exception(this, ErrorType.UPDATE_CHECK_FAILED, e);
 
-			JOptionPane.showMessageDialog(frame, "Unable to check for updates!", "Error!", JOptionPane.ERROR_MESSAGE);
+		} catch (final Exception e) {
+
+			throw new Texture_Patcher_Exception(this, ErrorType.UNKNOWN_ERROR, e);
 
 		}
 
