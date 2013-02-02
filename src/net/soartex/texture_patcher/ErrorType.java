@@ -2,18 +2,21 @@ package net.soartex.texture_patcher;
 
 enum ErrorType {
 
-	WINDOW_CLOSED ("The window was closed!"),
-	NO_INTERNET   ("Could not connect to the server! Perhaps you have no internet?"),
-	UNKNOWN_ERROR ("An unforseen error occured!"),
+	WINDOW_CLOSED ("The window was closed! (This ErrorType is used for technical purposes.)"),
+	CANNOT_FIND_SERVER   ("Could not connect to the server! Perhaps you have no internet?"),
 
-	NO_EXTERNAL_CONFIG      ("The externalconfig.txt file is missing!"),
-	DEFAULT_EXTERNAL_CONFIG ("The externalconfig.txt file is the default!"),
-	BAD_EXTERNAL_CONFIG     ("The URL in the externalconfig.txt file is bad!"),
-	INCOMPLETE_CONFIG       ("The configuration file is incomplete!"),
-	BAD_CONFIG              ("The configuration file could not be parsed as JSON!"),
+	EXTERNAL_CONFIG_MISSING ("The externalconfig.txt file is missing!"),
+	EXTERNAL_CONFIG_DEFAULT ("The externalconfig.txt file is the default!"),
+	EXTERNAL_CONFIG_BAD     ("The URL in the externalconfig.txt file is bad!"),
+	CONFIG_INCOMPLETE       ("The configuration file is incomplete!"),
+	CONFIG_BAD              ("The configuration file could not be parsed as JSON!"),
 	CONFIG_NOT_FOUND        ("The configuration file could not be found on the server!"),
+	CONFIG_LOADING_FAILED   ("An error occured while loading the configuration!"),
 
-	SETTING_SKIN_FAILED     ("Unable to set desired skin!"),
+	SETTING_SKIN_FAILED ("Unable to set desired skin!"),
+	SETTING_ICON_FAILED ("Unable to set icon from configured URL!"),
+
+	MODPACK_LOADING_FAILED ("An error occured while loading the modpacks file!"),
 
 	UPDATE_CHECK_FAILED ("Unable to check for updates!");
 

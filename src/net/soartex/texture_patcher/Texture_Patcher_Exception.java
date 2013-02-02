@@ -45,35 +45,33 @@ final class Texture_Patcher_Exception extends Exception {
 
 	}
 
-	protected void showMessageDialog (final String title, final int type) {
+	protected void showDialog (final String title, final int type) {
 
-		if (this.type == ErrorType.UNKNOWN_ERROR) showExceptionDialog();
+		if (getCause() == null) JOptionPane.showMessageDialog(t_p.frame, getMessage(), title, type);
 
-		else JOptionPane.showMessageDialog(t_p.frame, getMessage(), title, type);
+		else {
 
-	}
+			if (JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(t_p.frame, getMessage() + "\r\nWould you like to see details about what happened?", title, JOptionPane.YES_NO_OPTION, type)) {
 
-	protected void showExceptionDialog () {
+				final StringWriter sw = new StringWriter();
 
-		if (JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(t_p.frame, getMessage() + "\r\nWould you like to see details about what happened?", "Error!", JOptionPane.YES_NO_OPTION, JOptionPane.ERROR_MESSAGE)) {
+				getCause().printStackTrace(new PrintWriter(sw));
 
-			final StringWriter sw = new StringWriter();
+				sw.flush();
 
-			getCause().printStackTrace(new PrintWriter(sw));
+				final JTextArea text = new JTextArea(sw.toString());
+				text.setEditable(false);
 
-			sw.flush();
+				final JScrollPane pane = new JScrollPane(text);
 
-			final JTextArea text = new JTextArea(sw.toString());
-			text.setEditable(false);
+				pane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+				pane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
-			final JScrollPane pane = new JScrollPane(text);
+				pane.setPreferredSize(new Dimension(400, 300));
 
-			pane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-			pane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+				JOptionPane.showMessageDialog(t_p.frame, pane, title, type);
 
-			pane.setPreferredSize(new Dimension(400, 300));
-
-			JOptionPane.showMessageDialog(t_p.frame, pane, "Error!", JOptionPane.PLAIN_MESSAGE);
+			}
 
 		}
 

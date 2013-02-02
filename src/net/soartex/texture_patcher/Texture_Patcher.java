@@ -90,25 +90,13 @@ public final class Texture_Patcher implements Runnable {
 
 			open();
 
-			try {
-
-				checkUpdate();
-
-			} catch (final Texture_Patcher_Exception e) {
-
-				e.printStackTrace();
-
-				e.showMessageDialog("Error!", JOptionPane.ERROR_MESSAGE);
-
-			}
+			checkUpdate();
 
 		} catch (final Texture_Patcher_Exception e) {
 
 			e.printStackTrace();
 
-			if (e.getType() != ErrorType.WINDOW_CLOSED) e.showMessageDialog("Error!", JOptionPane.ERROR_MESSAGE);
-
-			if (frame != null) frame.dispose();
+			if (e.getType() != ErrorType.WINDOW_CLOSED) e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
 
 			return;
 
@@ -131,9 +119,9 @@ public final class Texture_Patcher implements Runnable {
 
 			else if (!debug)
 
-				throw new Texture_Patcher_Exception(this, ErrorType.NO_EXTERNAL_CONFIG, null);
+				throw new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_MISSING, null);
 
-			// DEBUG: Used for testing.
+			// Used for testing.
 
 			if (debug) readLine = "http://soartex.net/texture-patcher/data/config.json";
 
@@ -141,7 +129,7 @@ public final class Texture_Patcher implements Runnable {
 
 			if (readLine.startsWith("#"))
 
-				throw new Texture_Patcher_Exception(this, ErrorType.DEFAULT_EXTERNAL_CONFIG, null);
+				throw new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_DEFAULT, null);
 
 			// Loads the JSON file.
 
@@ -151,15 +139,14 @@ public final class Texture_Patcher implements Runnable {
 
 			if (config.get("rooturl") == null || config.get("zipsurl") == null)
 
-				throw new Texture_Patcher_Exception(this, ErrorType.INCOMPLETE_CONFIG, null);
+				throw new Texture_Patcher_Exception(this, ErrorType.CONFIG_INCOMPLETE, null);
 
 			// Resolves file URLs based on the root URL.
 
 			final String rooturl = config.get("rooturl");
 
-			config.put("versionurl", "http://soartex.net/texture-patcher/latestversion.txt");
 			config.put("modsurl", rooturl + "/mods.csv");
-			config.put("modpacksurl", rooturl + "/modpacks.csv");
+			config.put("modpacksurl", rooturl + "/modpacks.json");
 
 			if (config.get("name") == null) config.put("name", "Texture Patcher");
 
@@ -171,19 +158,27 @@ public final class Texture_Patcher implements Runnable {
 
 		} catch (final MalformedURLException e) {
 
-			throw new Texture_Patcher_Exception(this, ErrorType.BAD_EXTERNAL_CONFIG, e);
+			// Happens if the URL in the externalconfig.txt is malformed.
+
+			throw new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_BAD, e);
 
 		} catch (final IOException e) {
 
-			throw new Texture_Patcher_Exception(this, ErrorType.NO_INTERNET, e);
+			// Happens if the URL's host cannot be resolved.
+
+			throw new Texture_Patcher_Exception(this, ErrorType.CANNOT_FIND_SERVER, e);
 
 		} catch (final ParseException e) {
 
-			throw new Texture_Patcher_Exception(this, ErrorType.BAD_CONFIG, e);
+			// Happens if the config file cannot be parsed as JSON.
+
+			throw new Texture_Patcher_Exception(this, ErrorType.CONFIG_BAD, e);
 
 		} catch (final Exception e) {
 
-			throw new Texture_Patcher_Exception(this, ErrorType.UNKNOWN_ERROR, e);
+			// Happens for all other errors.
+
+			throw new Texture_Patcher_Exception(this, ErrorType.CONFIG_LOADING_FAILED, e);
 
 		}
 
@@ -223,7 +218,7 @@ public final class Texture_Patcher implements Runnable {
 
 			t_p_e.printStackTrace();
 
-			t_p_e.showMessageDialog("Warning!", JOptionPane.WARNING_MESSAGE);
+			t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
 
 		}
 
@@ -237,23 +232,17 @@ public final class Texture_Patcher implements Runnable {
 
 		try {
 
-			final URL iconurl = new URL(config.get("iconurl") == null ? "http://soartex.net/patcher/texture-patcher/icon.png" : config.get("iconurl"));
+			final URL iconurl = new URL(config.get("iconurl") == null ? "http://soartex.net/texture-patcher/icon.png" : config.get("iconurl"));
 
 			frame.setIconImage(Toolkit.getDefaultToolkit().createImage(iconurl));
 
 		} catch (final Exception e) {
 
-			e.printStackTrace();
+			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.SETTING_ICON_FAILED, e);
 
-			if (new File("icon.png").exists()) {
+			t_p_e.printStackTrace();
 
-				frame.setIconImage(Toolkit.getDefaultToolkit().getImage("icon.png"));
-
-			} else if (getClass().getClassLoader().getResource("icon.png") != null) {
-
-				frame.setIconImage(Toolkit.getDefaultToolkit().createImage(getClass().getClassLoader().getResource("icon.png")));
-
-			}
+			t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
 
 		}
 
@@ -491,23 +480,24 @@ public final class Texture_Patcher implements Runnable {
 		return temp;
 	}
 
+	@SuppressWarnings("unchecked")
 	protected void loadModpacks () {
 
 		modpacks = new HashMap<String, URL>();
 
 		try {
 
-			final URL modpacksurl = new URL(config.get("modpacksurl"));
+			final HashMap<String, String> jsonModpacks = (HashMap<String, String>) new JSONParser().parse(new InputStreamReader(new URL(config.get("modpacksurl")).openStream()));
 
-			final BufferedReader in = new BufferedReader(new InputStreamReader(modpacksurl.openStream()));
-
-			String readline;
-
-			while ((readline = in.readLine()) != null) {
+			for (final String modpack : jsonModpacks.keySet()) {
 
 				try {
 
-					new URL(config.get("rooturl") + readline.split(",")[1]).openStream();
+					final URL modpackURL = new URL(config.get("rooturl") + jsonModpacks.get(modpack));
+
+					modpackURL.openStream();
+
+					modpacks.put(modpack, modpackURL);
 
 				} catch (final IOException e) {
 
@@ -517,19 +507,15 @@ public final class Texture_Patcher implements Runnable {
 
 				}
 
-				if (!readline.contains(",") || readline.split(",").length < 2) {
-
-					continue;
-
-				}
-
-				modpacks.put(readline.split(",")[0].replace(" ", "").replace("_", " "), new URL(config.get("rooturl") + readline.split(",")[1].replace(" ", "")));
-
 			}
 
-		} catch (final Exception e){
+		} catch (final Exception e) {
 
-			e.printStackTrace();
+			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.MODPACK_LOADING_FAILED, e);
+
+			t_p_e.printStackTrace();
+
+			t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
 
 		}
 
@@ -672,19 +658,23 @@ public final class Texture_Patcher implements Runnable {
 
 		JRadioButtonMenuItem modpacksitems;
 
-		for (final String modpack: modpacks.keySet()) {
+		if (modpacks != null) {
 
-			modpacksitems = new JRadioButtonMenuItem(modpack);
-			modpacksitems.setSelected(false);
-			modpacksitems.addActionListener(new Listeners.ModpackListener(this));
-			group.add(modpacksitems);
-			menu.add(modpacksitems);
+			for (final String modpack : modpacks.keySet()) {
+
+				modpacksitems = new JRadioButtonMenuItem(modpack);
+				modpacksitems.setSelected(false);
+				modpacksitems.addActionListener(new Listeners.ModpackListener(this));
+				group.add(modpacksitems);
+				menu.add(modpacksitems);
+
+			}
+
+			if (!modpacks.isEmpty()) menu.addSeparator();
 
 		}
 
 		JRadioButtonMenuItem selectitems;
-
-		if (!modpacks.isEmpty()) menu.addSeparator();
 
 		selectitems = new JRadioButtonMenuItem("Select All");
 		selectitems.setSelected(false);
@@ -714,11 +704,11 @@ public final class Texture_Patcher implements Runnable {
 
 	}
 
-	protected void checkUpdate () throws Texture_Patcher_Exception {
+	protected void checkUpdate () {
 
 		try {
 
-			final URL versionurl = new URL(config.get("versionurl"));
+			final URL versionurl = new URL("http://soartex.net/texture-patcher/latestversion.txt");
 
 			final float latestversion = Float.parseFloat(new BufferedReader(new InputStreamReader(versionurl.openStream())).readLine());
 
@@ -728,13 +718,13 @@ public final class Texture_Patcher implements Runnable {
 
 			}
 
-		} catch (final IOException e) {
-
-			throw new Texture_Patcher_Exception(this, ErrorType.UPDATE_CHECK_FAILED, e);
-
 		} catch (final Exception e) {
 
-			throw new Texture_Patcher_Exception(this, ErrorType.UNKNOWN_ERROR, e);
+			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.UPDATE_CHECK_FAILED, e);
+
+			t_p_e.printStackTrace();
+
+			t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
 
 		}
 
