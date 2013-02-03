@@ -401,9 +401,7 @@ public final class Texture_Patcher implements Runnable {
 
 			int count = 0;
 
-			final TreeSet<String> modset = new TreeSet<String>(mods.keySet());
-
-			for (final String mod : modset) {
+			for (final String mod : new TreeSet<String>(mods.keySet())) {
 
 				if (loadingFrame.isVisible() != true) {
 
@@ -474,7 +472,7 @@ public final class Texture_Patcher implements Runnable {
 					modMessage.setText("Loading mod # " + count++);
 					modTitle.setText(itemtext[0]);
 
-					System.out.println("Loading: " + itemtext[0]);
+					System.out.println("Loading mod: " + itemtext[0]);
 
 				} catch (final IOException e) {
 
@@ -521,6 +519,8 @@ public final class Texture_Patcher implements Runnable {
 					modpackURL.openStream();
 
 					modpacks.put(modpack, modpackURL);
+
+					System.out.println("Loading modpack: " + modpack);
 
 				} catch (final IOException e) {
 
@@ -683,7 +683,7 @@ public final class Texture_Patcher implements Runnable {
 
 		if (modpacks != null) {
 
-			for (final String modpack : modpacks.keySet()) {
+			for (final String modpack : new TreeSet<String>(modpacks.keySet())) {
 
 				modpacksitems = new JRadioButtonMenuItem(modpack);
 				modpacksitems.setSelected(false);

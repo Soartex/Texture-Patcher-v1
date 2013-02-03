@@ -353,9 +353,9 @@ final class Listeners {
 
 				final URL packurl = new URL(t_p.config.get("packurl"));
 
-				int size = 0;
+				float size = 0;
 
-				final byte[] buffer = new byte[1024 * 1024];
+				final byte[] buffer = new byte[1024];
 
 				InputStream in;
 
@@ -365,7 +365,7 @@ final class Listeners {
 
 					in = connection.getInputStream();
 
-					size = connection.getContentLength() / 1024;
+					size = connection.getContentLength();
 
 				} catch (final IOException e) {
 
@@ -379,8 +379,10 @@ final class Listeners {
 
 				System.out.println("Downloading: " + t_p.config.get("packurl"));
 
-				final int progressamount = size / 102400;
-				int progresscount = 0;
+				final float progressamount = size / 102400;
+				float progresscount = 0;
+
+				System.out.println(progressamount);
 
 				file.getParentFile().mkdirs();
 
