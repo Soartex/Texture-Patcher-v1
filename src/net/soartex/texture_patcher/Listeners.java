@@ -324,7 +324,31 @@ final class Listeners {
 
 			}
 
-			if (fileChooser.showSaveDialog(t_p.frame) != JFileChooser.APPROVE_OPTION) return false;
+			while (true) {
+
+				if (fileChooser.showSaveDialog(t_p.frame) != JFileChooser.APPROVE_OPTION) return false;
+
+				if (fileChooser.getSelectedFile().exists()) {
+
+					final int option = JOptionPane.showConfirmDialog(t_p.frame, "This file you selected already exists!\r\nDo you wish to overwrite?", "Overwrite?", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+
+					if (option == JOptionPane.NO_OPTION) {
+
+						continue;
+
+					} else if (option == JOptionPane.CANCEL_OPTION) {
+
+						return false;
+
+					} else {
+
+						break;
+
+					}
+
+				}
+
+			}
 
 			if (fileChooser.getSelectedFile().getAbsolutePath().endsWith(".zip")) {
 
@@ -382,8 +406,6 @@ final class Listeners {
 				final float progressamount = size / 102400;
 				float progresscount = 0;
 
-				System.out.println(progressamount);
-
 				file.getParentFile().mkdirs();
 
 				final FileOutputStream out = new FileOutputStream(file);
@@ -411,6 +433,11 @@ final class Listeners {
 				e.printStackTrace();
 
 			}
+
+			progressdialog.setString("Done!");
+			progressdialog.setProgressValue(100);
+
+			delay(1500);
 
 			progressdialog.close();
 
@@ -720,20 +747,6 @@ final class Listeners {
 			progressdialog.close();
 
 			t_p.frame.requestFocus();
-
-		}
-
-		protected void delay (final long time) {
-
-			try {
-
-				TimeUnit.MILLISECONDS.sleep(time);
-
-			} catch (final Exception e) {
-
-				e.printStackTrace();
-
-			}
 
 		}
 
@@ -1303,6 +1316,20 @@ final class Listeners {
 		protected void setString (final String value) {
 
 			status.setText(value);
+
+		}
+
+	}
+
+	protected static void delay (final long time) {
+
+		try {
+
+			TimeUnit.MILLISECONDS.sleep(time);
+
+		} catch (final Exception e) {
+
+			e.printStackTrace();
 
 		}
 
