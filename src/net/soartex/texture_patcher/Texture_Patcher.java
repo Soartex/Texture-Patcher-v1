@@ -20,6 +20,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.TreeSet;
 import java.util.prefs.Preferences;
 
 import javax.swing.ButtonGroup;
@@ -40,10 +41,20 @@ import javax.swing.UIManager;
 import javax.swing.UIManager.LookAndFeelInfo;
 import javax.swing.WindowConstants;
 
+import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+/**
+ * Texture_Patcher main class.
+ * 
+ * @author REDX36
+ * @version 1.1
+ *
+ */
 public final class Texture_Patcher implements Runnable {
+
+	// Program variables.
 
 	protected final static float VERSION = 1.1F;
 
@@ -51,6 +62,11 @@ public final class Texture_Patcher implements Runnable {
 	protected HashMap<String, String> config = new HashMap<String, String>();
 
 	protected static boolean debug = false;
+
+	protected Object[][] tableData;
+	protected HashMap<String, URL> modpacks;
+
+	// Swing objects.
 
 	protected JFrame frame;
 	protected JFrame loadingFrame;
@@ -60,15 +76,24 @@ public final class Texture_Patcher implements Runnable {
 	protected JButton patch;
 	protected JTable table;
 
-	protected Object[][] tableData;
-	protected HashMap<String, URL> modpacks;
-
+	/**
+	 * Sets certain Mac OSX Cocoa system flags, checks arguments for debug mode, and runs the patcher in a separate thread.
+	 * 
+	 * @param args If <code>args</code> is longer than 0, and <code>args[0]</code> evaluates to <code>true</code>,
+	 * 
+	 */
 	public static void main (final String[] args) {
+
+		// Set certain properties specific to Mac OSX Cocoa.
 
 		System.setProperty("apple.laf.useScreenMenuBar", "true");
 		System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Texture-Patcher v." + VERSION);
 
+		// Check if the patcher is being run in debug mode.
+
 		debug = Boolean.parseBoolean(args.length > 0 ? args[0] : "");
+
+		// Start the patcher in its own thread.
 
 		new Thread(new Texture_Patcher()).start();
 
@@ -104,7 +129,7 @@ public final class Texture_Patcher implements Runnable {
 
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@SuppressWarnings("unchecked")
 	protected void loadConfig () throws Texture_Patcher_Exception {
 
 		try {
@@ -133,7 +158,7 @@ public final class Texture_Patcher implements Runnable {
 
 			// Loads the JSON file.
 
-			config = (HashMap) new JSONParser().parse(new InputStreamReader(new URL(readLine).openStream()));
+			config = (HashMap<String, String>) new JSONParser().parse(new InputStreamReader(new URL(readLine).openStream()));
 
 			// Checks if the root or zips URLs are missing.
 
@@ -145,7 +170,7 @@ public final class Texture_Patcher implements Runnable {
 
 			final String rooturl = config.get("rooturl");
 
-			config.put("modsurl", rooturl + "/mods.csv");
+			config.put("modsurl", rooturl + "/mods.json");
 			config.put("modpacksurl", rooturl + "/modpacks.json");
 
 			if (config.get("name") == null) config.put("name", "Texture Patcher");
@@ -174,6 +199,12 @@ public final class Texture_Patcher implements Runnable {
 
 			throw new Texture_Patcher_Exception(this, ErrorType.CONFIG_BAD, e);
 
+		} catch (final Texture_Patcher_Exception e) {
+
+			// Happens for TPE's thrown in the method body for if statements.
+
+			throw e;
+
 		} catch (final Exception e) {
 
 			// Happens for all other errors.
@@ -185,6 +216,8 @@ public final class Texture_Patcher implements Runnable {
 	}
 
 	protected void initializeWindow () {
+
+		// Set the skin from the configuration.
 
 		try {
 
@@ -214,6 +247,8 @@ public final class Texture_Patcher implements Runnable {
 
 		} catch (final Exception e) {
 
+			// Happens if the skin cannot be found, or if an error occurs while setting it.
+
 			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.SETTING_SKIN_FAILED, e);
 
 			t_p_e.printStackTrace();
@@ -221,6 +256,8 @@ public final class Texture_Patcher implements Runnable {
 			t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
 
 		}
+
+		// Configure the frame.
 
 		frame = new JFrame(config.get("name") + (config.get("name").equals("Texture Patcher") ? " v." : " Patcher v."  ) + VERSION);
 		frame.setLayout(new GridBagLayout());
@@ -230,6 +267,8 @@ public final class Texture_Patcher implements Runnable {
 		frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		frame.addWindowListener(new Listeners.ExitListener(this));
 
+		// Load the frame icon.
+
 		try {
 
 			final URL iconurl = new URL(config.get("iconurl") == null ? "http://soartex.net/texture-patcher/icon.png" : config.get("iconurl"));
@@ -237,6 +276,8 @@ public final class Texture_Patcher implements Runnable {
 			frame.setIconImage(Toolkit.getDefaultToolkit().createImage(iconurl));
 
 		} catch (final Exception e) {
+
+			// Happens if IO error occurs while setting the icon.
 
 			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.SETTING_ICON_FAILED, e);
 
@@ -349,21 +390,20 @@ public final class Texture_Patcher implements Runnable {
 
 	}
 
+	@SuppressWarnings("unchecked")
 	protected Object[][] loadTable (final JLabel modMessage, final JLabel modTitle) {
 
 		final ArrayList<String[]> itemsInfo = new ArrayList<String[]>();
 
 		try {
 
-			final URL tabledata = new URL(config.get("modsurl"));
-
-			final BufferedReader in = new BufferedReader(new InputStreamReader(tabledata.openStream()));
-
-			String readline;
+			final HashMap<String, JSONObject> mods = (HashMap<String, JSONObject>) new JSONParser().parse(new InputStreamReader(new URL(config.get("modsurl")).openStream()));
 
 			int count = 0;
 
-			while ((readline = in.readLine()) != null) {
+			final TreeSet<String> modset = new TreeSet<String>(mods.keySet());
+
+			for (final String mod : modset) {
 
 				if (loadingFrame.isVisible() != true) {
 
@@ -371,7 +411,7 @@ public final class Texture_Patcher implements Runnable {
 
 				}
 
-				final URL zipurl = new URL(config.get("zipsurl") + readline.split(",")[0].replace(" ", "") + ".zip");
+				final URL zipurl = new URL(config.get("zipsurl") + mod.replace(" ", "_") + ".zip");
 
 				try {
 
@@ -391,29 +431,12 @@ public final class Texture_Patcher implements Runnable {
 
 					connection.getInputStream().close();
 
-					final String[] split = readline.split(",");
-
-					if (split.length < 1) {
-
-						continue;
-
-					}
-
 					final String[] itemtext = new String[5];
 
-					itemtext[0] = split[0].replace(" ", "").replace("_", " ");
+					itemtext[0] = mod;
 
-					if (split.length == 1) {
-
-						itemtext[1] = "Unknown";
-						itemtext[2] = "Unknown";
-
-					} else {
-
-						itemtext[1] = split[1].replace(" ", "");
-						itemtext[2] = split[2].replace(" ", "");
-
-					}
+					itemtext[1] = mods.get(mod).get("version") == null ? "Unknown" : (String) mods.get(mod).get("version");
+					itemtext[2] = mods.get(mod).get("mcversion") == null ? "Unknown" : (String) mods.get(mod).get("mcversion");
 
 					try {
 
@@ -463,7 +486,7 @@ public final class Texture_Patcher implements Runnable {
 
 			}
 
-		} catch (final IOException e) {
+		} catch (final Exception e) {
 
 			e.printStackTrace();
 
