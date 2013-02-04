@@ -66,8 +66,6 @@ final class Listeners {
 			final int row = table.rowAtPoint(e.getPoint());
 			final int column = table.columnAtPoint(e.getPoint());
 
-			System.out.println(row);
-
 			if (column == 0) {
 
 				table.setValueAt(!((Boolean) table.getValueAt(row, column)), row, column);
@@ -347,6 +345,10 @@ final class Listeners {
 						break;
 
 					}
+
+				} else {
+
+					break;
 
 				}
 
@@ -763,12 +765,11 @@ final class Listeners {
 
 			try {
 
-				int count = 0;
-
 				final ZipFile zipfile = new ZipFile(new File(t_p.path.getText()));
 
-				final int progressamount = zipfile.size();
-				int progresscount = 0;
+				int count = 0;
+
+				final int progressamount = 25/ zipfile.size();
 
 				zipfile.close();
 
@@ -817,13 +818,7 @@ final class Listeners {
 
 					}
 
-					if (++progresscount >= progressamount / 25) {
-
-						progressdialog.setProgressValue(progressdialog.getProgressValue() + 1);
-
-						progresscount = 0;
-
-					}
+						progressdialog.setProgressValue(progressdialog.getProgressValue() + progressamount);
 
 				}
 
@@ -930,8 +925,7 @@ final class Listeners {
 
 			int count = 0;
 
-			final int progressamount = modslist.size() / 25;
-			int progresscount = 0;
+			final int progressamount = 25 / modslist.size();
 
 			for (final String mod : modslist) {
 
@@ -979,13 +973,7 @@ final class Listeners {
 
 				}
 
-				if (++progresscount >= progressamount) {
-
-					progressdialog.setProgressValue(progressdialog.getProgressValue() + 1);
-
-					progresscount = 0;
-
-				}
+				progressdialog.setProgressValue(progressdialog.getProgressValue() + progressamount);
 
 			}
 
@@ -999,8 +987,7 @@ final class Listeners {
 
 			int count = 0;
 
-			final int progressamount = files.size() / 25;
-			int progresscount = 0;
+			final int progressamount = 25 / files.size();
 
 			for (final File file : files) {
 
@@ -1061,13 +1048,7 @@ final class Listeners {
 
 				}
 
-				if (++progresscount >= progressamount) {
-
-					progressdialog.setProgressValue(progressdialog.getProgressValue() + 1);
-
-					progresscount = 0;
-
-				}
+				progressdialog.setProgressValue(progressdialog.getProgressValue() + progressamount);
 
 			}
 

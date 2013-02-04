@@ -18,6 +18,8 @@ import java.net.URLConnection;
 import java.text.SimpleDateFormat;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.TreeSet;
@@ -390,24 +392,25 @@ public final class Texture_Patcher implements Runnable {
 
 	}
 
-	@SuppressWarnings("unchecked")
 	protected Object[][] loadTable (final JLabel modMessage, final JLabel modTitle) {
 
 		final ArrayList<String[]> itemsInfo = new ArrayList<String[]>();
 
 		try {
 
-			final HashMap<String, JSONObject> mods = (HashMap<String, JSONObject>) new JSONParser().parse(new InputStreamReader(new URL(config.get("modsurl")).openStream()));
+			final JSONObject mods = (JSONObject) new JSONParser().parse(new InputStreamReader(new URL(config.get("modsurl")).openStream()));
 
 			int count = 0;
 
-			for (final String mod : new TreeSet<String>(mods.keySet())) {
+			for (final Object omod : mods.keySet()) {
 
 				if (loadingFrame.isVisible() != true) {
 
 					break;
 
 				}
+
+				final String mod = (String) omod;
 
 				final URL zipurl = new URL(config.get("zipsurl") + mod.replace(" ", "_") + ".zip");
 
@@ -433,8 +436,8 @@ public final class Texture_Patcher implements Runnable {
 
 					itemtext[0] = mod;
 
-					itemtext[1] = mods.get(mod).get("version") == null ? "Unknown" : (String) mods.get(mod).get("version");
-					itemtext[2] = mods.get(mod).get("mcversion") == null ? "Unknown" : (String) mods.get(mod).get("mcversion");
+					itemtext[1] = ((JSONObject) mods.get(mod)).get("version") == null ? "Unknown" : (String)((JSONObject) mods.get(mod)).get("version");
+					itemtext[2] = ((JSONObject) mods.get(mod)).get("mcversion") == null ? "Unknown" : (String)((JSONObject) mods.get(mod)).get("mcversion");
 
 					try {
 
@@ -490,6 +493,16 @@ public final class Texture_Patcher implements Runnable {
 
 		}
 
+		Collections.sort(itemsInfo, new Comparator<String[]>() {
+
+			@Override public int compare(final String[] o1, final String[] o2) {
+
+				return o1[0].compareTo(o2[0]);
+
+			}
+
+		});
+
 		final Object[][] temp = new Object[itemsInfo.size()][];
 
 		for (int i = 0; i < itemsInfo.size(); i++){
@@ -501,18 +514,19 @@ public final class Texture_Patcher implements Runnable {
 		return temp;
 	}
 
-	@SuppressWarnings("unchecked")
 	protected void loadModpacks () {
 
 		modpacks = new HashMap<String, URL>();
 
 		try {
 
-			final HashMap<String, String> jsonModpacks = (HashMap<String, String>) new JSONParser().parse(new InputStreamReader(new URL(config.get("modpacksurl")).openStream()));
+			final JSONObject jsonModpacks = (JSONObject) new JSONParser().parse(new InputStreamReader(new URL(config.get("modpacksurl")).openStream()));
 
-			for (final String modpack : jsonModpacks.keySet()) {
+			for (final Object omodpack : jsonModpacks.keySet()) {
 
 				try {
+
+					final String modpack = (String) omodpack;
 
 					final URL modpackURL = new URL(config.get("rooturl") + jsonModpacks.get(modpack));
 
@@ -522,7 +536,7 @@ public final class Texture_Patcher implements Runnable {
 
 					System.out.println("Loading modpack: " + modpack);
 
-				} catch (final IOException e) {
+				} catch (final Exception e) {
 
 					e.printStackTrace();
 
@@ -655,10 +669,8 @@ public final class Texture_Patcher implements Runnable {
 
 		table = new JTable(new TableModel(tableData));
 		table.setFillsViewportHeight(true);
-
 		table.setAutoCreateRowSorter(true);
 		table.getTableHeader().setReorderingAllowed(false);
-
 		table.getColumnModel().getColumn(0).setMaxWidth(25);
 		table.addMouseListener(new Listeners.TableListener(table, this));
 
