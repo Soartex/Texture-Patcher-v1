@@ -8,11 +8,11 @@ final class TableModel extends AbstractTableModel {
 
 	private final Object[][] data;
 
-	private final String[] COLUMNS = {"\u2713","Mod Name","Mod Version","MC Version","File Size","Date Modified"};
+	private final String[] columns = {"\u2713","Mod Name","Mod Version","MC Version","File Size","Date Modified"};
 
-	public TableModel (final Object[][] temp) {
+	public TableModel (final Object[][] data) {
 
-		data = temp;
+		this.data = data;
 
 	}
 
@@ -24,7 +24,7 @@ final class TableModel extends AbstractTableModel {
 
 	@Override public int getColumnCount () {
 
-		return COLUMNS.length;
+		return columns.length;
 
 	}
 
@@ -34,9 +34,15 @@ final class TableModel extends AbstractTableModel {
 
 	}
 
+	@Override public void setValueAt (final Object value, final int row, final int column) {
+
+		data[row][column] = value;
+
+	}
+
 	@Override public String getColumnName (final int column) {
 
-		return COLUMNS[column];
+		return columns[column];
 
 	}
 

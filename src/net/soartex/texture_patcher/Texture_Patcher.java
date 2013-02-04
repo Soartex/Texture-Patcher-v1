@@ -657,6 +657,7 @@ public final class Texture_Patcher implements Runnable {
 		table.setFillsViewportHeight(true);
 
 		table.setAutoCreateRowSorter(true);
+		table.getTableHeader().setReorderingAllowed(false);
 
 		table.getColumnModel().getColumn(0).setMaxWidth(25);
 		table.addMouseListener(new Listeners.TableListener(table, this));

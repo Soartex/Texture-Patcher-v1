@@ -64,11 +64,13 @@ final class Listeners {
 		@Override public void mouseClicked (final MouseEvent e) {
 
 			final int row = table.rowAtPoint(e.getPoint());
-			final int col = table.columnAtPoint(e.getPoint());
+			final int column = table.columnAtPoint(e.getPoint());
 
-			if (col == 0) {
+			System.out.println(row);
 
-				t_p.tableData[row][0] = !(Boolean)t_p.tableData[row][0];
+			if (column == 0) {
+
+				table.setValueAt(!((Boolean) table.getValueAt(row, column)), row, column);
 				table.updateUI();
 
 			}
