@@ -15,8 +15,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 
-import java.text.SimpleDateFormat;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -394,7 +392,7 @@ public final class Texture_Patcher implements Runnable {
 
 	protected Object[][] loadTable (final JLabel modMessage, final JLabel modTitle) {
 
-		final ArrayList<String[]> itemsInfo = new ArrayList<String[]>();
+		final ArrayList<Object[]> rows = new ArrayList<Object[]>();
 
 		try {
 
@@ -432,12 +430,12 @@ public final class Texture_Patcher implements Runnable {
 
 					connection.getInputStream().close();
 
-					final String[] itemtext = new String[5];
+					final Object[] row = new Object[5];
 
-					itemtext[0] = mod;
+					row[0] = mod;
 
-					itemtext[1] = ((JSONObject) mods.get(mod)).get("version") == null ? "Unknown" : (String)((JSONObject) mods.get(mod)).get("version");
-					itemtext[2] = ((JSONObject) mods.get(mod)).get("mcversion") == null ? "Unknown" : (String)((JSONObject) mods.get(mod)).get("mcversion");
+					row[1] = ((JSONObject) mods.get(mod)).get("version") == null ? "Unknown" : (String)((JSONObject) mods.get(mod)).get("version");
+					row[2] = ((JSONObject) mods.get(mod)).get("mcversion") == null ? "Unknown" : (String)((JSONObject) mods.get(mod)).get("mcversion");
 
 					try {
 
@@ -445,37 +443,41 @@ public final class Texture_Patcher implements Runnable {
 
 						if (size == -1) {
 
-							itemtext[3] = "Unknown";
+							row[3] = "Unknown";
 
 						} else {
 
-							if (size > 1024) itemtext[3] = size / 1024 + " kb";
-							else itemtext[3] = String.valueOf(size) + " bytes";
+							if (size > 1024) row[3] = size / 1024 + " kb";
+							else row[3] = String.valueOf(size) + " bytes";
 
 						}
 
 					} catch (final Exception e) {
 
-						itemtext[3] = "Unknown";
+						e.printStackTrace();
+
+						row[3] = "Unknown";
 
 					}
 
 					try {
 
-						itemtext[4] = new SimpleDateFormat("MM/dd/yyyy").format(new Date(connection.getLastModified()));
+						row[4] = new Date(connection.getLastModified());
 
 					} catch (final Exception e) {
 
-						itemtext[4] = "Unknown";
+						e.printStackTrace();
+
+						row[4] = "Unknown";
 
 					}
 
-					itemsInfo.add(itemtext);
+					rows.add(row);
 
 					modMessage.setText("Loading mod # " + count++);
-					modTitle.setText(itemtext[0]);
+					modTitle.setText((String) row[0]);
 
-					System.out.println("Loading mod: " + itemtext[0]);
+					System.out.println("Loading mod: " + row[0]);
 
 				} catch (final IOException e) {
 
@@ -493,21 +495,24 @@ public final class Texture_Patcher implements Runnable {
 
 		}
 
-		Collections.sort(itemsInfo, new Comparator<String[]>() {
+		Collections.sort(rows, new Comparator<Object[]>() {
 
-			@Override public int compare(final String[] o1, final String[] o2) {
+			@Override public int compare(final Object[] o1, final Object[] o2) {
 
-				return o1[0].compareTo(o2[0]);
+				final String a = (String) o1[0];
+				final String b = (String) o2[0];
+
+				return a.compareTo(b);
 
 			}
 
 		});
 
-		final Object[][] temp = new Object[itemsInfo.size()][];
+		final Object[][] temp = new Object[rows.size()][];
 
-		for (int i = 0; i < itemsInfo.size(); i++){
+		for (int i = 0; i < rows.size(); i++){
 
-			temp[i]= itemsInfo.get(i);
+			temp[i]= rows.get(i);
 
 		}
 
@@ -653,6 +658,8 @@ public final class Texture_Patcher implements Runnable {
 		} else {
 
 			path.setText("");
+
+			prefsnode.remove("path");
 
 		}
 

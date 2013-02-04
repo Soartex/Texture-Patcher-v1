@@ -26,6 +26,7 @@ import java.net.URLConnection;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
 import java.util.concurrent.TimeUnit;
 
@@ -255,22 +256,6 @@ final class Listeners {
 
 		}
 
-		protected final class ZipFileFilter extends FileFilter {
-
-			@Override public boolean accept (final File f) {
-
-				return f.isDirectory() || f.getName().endsWith(".zip");
-
-			}
-
-			@Override public String getDescription() {
-
-				return "Texture Pack Archive (*.zip)";
-
-			}
-
-		}
-
 	}
 
 	protected static final class DownloadPackListener implements ActionListener, Runnable {
@@ -308,7 +293,7 @@ final class Listeners {
 			final JFileChooser fileChooser = new JFileChooser();
 
 			fileChooser.setAcceptAllFileFilterUsed(false);
-			fileChooser.setFileFilter(new BrowseListener(t_p).new ZipFileFilter());
+			fileChooser.setFileFilter(new ZipFileFilter());
 
 			final File lastDir = new File(t_p.prefsnode.get("lastDir", System.getProperty("user.dir")));
 
@@ -593,8 +578,19 @@ final class Listeners {
 
 							if (readline.split(",")[0].equals(row[1])) {
 
-								final long olddate = new SimpleDateFormat("MM/dd/yyyy").parse(readline.split(",")[1]).getTime();
-								final long newdate = new SimpleDateFormat("MM/dd/yyyy").parse((String) row[5]).getTime();
+								long olddate = Long.MAX_VALUE;
+
+								try {
+
+									olddate = Long.parseLong(readline.split(",")[1]);
+
+								} catch (final Exception e) {
+
+									olddate = new SimpleDateFormat("MM/dd/yyyy").parse(readline.split(",")[1]).getTime();
+
+								}
+
+								final long newdate = ((Date) row[5]).getTime();
 
 								if (olddate < newdate) updates.add((String) row[1]);
 
@@ -769,7 +765,8 @@ final class Listeners {
 
 				int count = 0;
 
-				final int progressamount = 25/ zipfile.size();
+				final int progressamount = zipfile.size();
+				int progresscount = 0;
 
 				zipfile.close();
 
@@ -818,7 +815,14 @@ final class Listeners {
 
 					}
 
-						progressdialog.setProgressValue(progressdialog.getProgressValue() + progressamount);
+					if (++progresscount >= progressamount / 25) {
+
+						progressdialog.setProgressValue(progressdialog.getProgressValue() + 1);
+
+						progresscount = 0;
+
+					}
+
 
 				}
 
@@ -878,7 +882,7 @@ final class Listeners {
 
 				if ((Boolean) row[0] == false) continue;
 
-				modslistcontents = modslistcontents.concat((String) row[1] + "," + (String) row[5] + getLineSeparator());
+				modslistcontents = modslistcontents.concat((String) row[1] + "," + ((Date) row[5]).getTime() + getLineSeparator());
 
 			}
 
@@ -1207,6 +1211,22 @@ final class Listeners {
 		@Override public void windowIconified (final WindowEvent arg0) {}
 
 		@Override public void windowOpened (final WindowEvent arg0) {}
+
+	}
+
+	protected static final class ZipFileFilter extends FileFilter {
+
+		@Override public boolean accept (final File f) {
+
+			return f.isDirectory() || f.getName().endsWith(".zip");
+
+		}
+
+		@Override public String getDescription() {
+
+			return "Texture Pack Archive (*.zip)";
+
+		}
 
 	}
 
