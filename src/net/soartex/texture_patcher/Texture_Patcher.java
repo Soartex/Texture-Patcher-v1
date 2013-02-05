@@ -1,5 +1,6 @@
 package net.soartex.texture_patcher;
 
+import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -259,7 +260,10 @@ public final class Texture_Patcher implements Runnable {
 		frame = new JFrame((String) options.get("name") + (options.get("name").equals("Texture Patcher") ? " v." : " Patcher v."  ) + VERSION);
 		frame.setLayout(new GridBagLayout());
 
-		frame.setLocation(50, 50);
+		frame.setLocation(prefsnode.getInt("x", 50), prefsnode.getInt("y", 50));
+		frame.setSize(prefsnode.getInt("width", 500), prefsnode.getInt("height", 600));
+
+		frame.setExtendedState(prefsnode.getInt("max", Frame.NORMAL));
 
 		frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		frame.addWindowListener(new Listeners.ExitListener(this));
@@ -720,8 +724,6 @@ public final class Texture_Patcher implements Runnable {
 	}
 
 	protected void open () {
-
-		frame.setSize(500, 600);
 
 		frame.setVisible(true);
 

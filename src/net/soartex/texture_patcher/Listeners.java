@@ -1,6 +1,7 @@
 package net.soartex.texture_patcher;
 
 import java.awt.Desktop;
+import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -1195,6 +1196,22 @@ final class Listeners {
 		@Override public void windowClosed (final WindowEvent arg0) {}
 
 		@Override public void windowClosing (final WindowEvent e) {
+
+			if (t_p.frame.isVisible()) {
+
+				t_p.prefsnode.putInt("max", t_p.frame.getExtendedState());
+
+				if (t_p.frame.getExtendedState() != Frame.MAXIMIZED_BOTH) {
+
+					t_p.prefsnode.putInt("x", t_p.frame.getX());
+					t_p.prefsnode.putInt("y", t_p.frame.getY());
+
+					t_p.prefsnode.putInt("width", t_p.frame.getWidth());
+					t_p.prefsnode.putInt("height", t_p.frame.getHeight());
+
+				}
+
+			}
 
 			t_p.loadingFrame.setVisible(false);
 			t_p.loadingFrame.dispose();
