@@ -2,7 +2,9 @@ package net.soartex.texture_patcher;
 
 enum ErrorType {
 
-	WINDOW_CLOSED ("The window was closed! (This ErrorType is used for technical purposes.)"),
+	UNEXPECTED_EXCEPTION ("An unexpected exception occured!"),
+
+	WINDOW_CLOSED        ("The window was closed! (This ErrorType is used for technical purposes.)"),
 	CANNOT_FIND_SERVER   ("Could not connect to the server! Perhaps you have no internet?"),
 
 	EXTERNAL_CONFIG_MISSING ("The externalconfig.txt file is missing!"),
@@ -16,7 +18,7 @@ enum ErrorType {
 	SETTING_SKIN_FAILED ("Unable to set desired skin!"),
 	SETTING_ICON_FAILED ("Unable to set icon from configured URL!"),
 
-	MODPACK_LOADING_FAILED ("An error occured while loading the modpacks file!"),
+	MOD_LOADING_FAILED ("An error occured while loading the mods!"),
 
 	UPDATE_CHECK_FAILED ("Unable to check for updates!");
 

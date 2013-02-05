@@ -19,7 +19,6 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.prefs.Preferences;
 
 import javax.swing.ButtonGroup;
@@ -77,6 +76,8 @@ public final class Texture_Patcher implements Runnable {
 	protected JButton patch;
 	protected JTable table;
 
+	// Public methods
+
 	/**
 	 * Sets certain Mac OSX Cocoa system flags, checks arguments for debug mode, and runs the patcher in a separate thread.
 	 * 
@@ -104,31 +105,61 @@ public final class Texture_Patcher implements Runnable {
 
 		try {
 
+			// Load the configuration.
+
 			loadConfig();
+
+			// Initialize the window.
 
 			initializeWindow();
 
-			loadFiles();
+			// Load the mods.
+
+			loadMods();
+
+			// Load the modpacks.
 
 			loadModpacks();
 
+			// Initialize the components.
+
 			initializeComponents();
 
-			open();
+			// Open the window.
+
+			frame.setVisible(true);
+
+			// Check for updates.
 
 			checkUpdate();
 
 		} catch (final Texture_Patcher_Exception e) {
 
+			// Happens in the event of a caught but fatal error.
+
 			e.printStackTrace();
 
 			if (e.getType() != ErrorType.WINDOW_CLOSED) e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
 
-			return;
+			if (frame != null) frame.dispose();
+			if (loadingFrame != null) loadingFrame.dispose();
+
+		} catch (final Exception e) {
+
+			// Happens in the event of an uncaught error.
+
+			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.UNEXPECTED_EXCEPTION, e);
+
+			t_p_e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
+
+			if (frame != null) frame.dispose();
+			if (loadingFrame != null) loadingFrame.dispose();
 
 		}
 
 	}
+
+	// Protected methods.
 
 	@SuppressWarnings("unchecked")
 	protected void loadConfig () throws Texture_Patcher_Exception {
@@ -290,7 +321,9 @@ public final class Texture_Patcher implements Runnable {
 
 	}
 
-	protected void loadFiles () throws Texture_Patcher_Exception {
+	protected void loadMods () throws Texture_Patcher_Exception {
+
+		// Initialize the loading dialog.
 
 		loadingFrame = new JFrame("Loading files...");
 		loadingFrame.setLayout(new GridBagLayout());
@@ -308,6 +341,8 @@ public final class Texture_Patcher implements Runnable {
 		gbc.anchor = GridBagConstraints.NORTH;
 		gbc.insets = insets;
 
+		// Initialize the progress bar.
+
 		final JProgressBar progress = new JProgressBar(SwingConstants.HORIZONTAL);
 
 		progress.setIndeterminate(true);
@@ -324,6 +359,8 @@ public final class Texture_Patcher implements Runnable {
 		gbc.anchor = GridBagConstraints.NORTH;
 		gbc.insets = insets;
 
+		// Initialize the static message label.
+
 		final JLabel message = new JLabel("Please wait patiently while we load your files...", SwingConstants.CENTER);
 		loadingFrame.add(message, gbc);
 
@@ -337,6 +374,8 @@ public final class Texture_Patcher implements Runnable {
 		gbc.fill = GridBagConstraints.HORIZONTAL;
 		gbc.anchor = GridBagConstraints.NORTH;
 		gbc.insets = insets;
+
+		// Initialize the loading mod number label.
 
 		final JLabel modMessage = new JLabel("Loading mod # 0", SwingConstants.CENTER);
 		loadingFrame.add(modMessage, gbc);
@@ -352,6 +391,8 @@ public final class Texture_Patcher implements Runnable {
 		gbc.anchor = GridBagConstraints.NORTH;
 		gbc.insets = insets;
 
+		// Initialize the the loading mod name label.
+
 		final JLabel modName = new JLabel("--", SwingConstants.CENTER);
 		loadingFrame.add(modName,gbc);
 
@@ -366,24 +407,15 @@ public final class Texture_Patcher implements Runnable {
 		loadingFrame.setLocation(150, 150);
 		loadingFrame.setVisible(true);
 
-		final Object[][] temp = loadTable(modMessage, modName);
+		// Load the mods from the config file.
+
+		tableData = loadTable(modMessage, modName);
+
+		// Happens in the window is closed.
 
 		if (!loadingFrame.isVisible()) throw new Texture_Patcher_Exception(this, ErrorType.WINDOW_CLOSED, null);
 
-		tableData = new Object[temp.length][];
-
-		for (int i = 0; i < temp.length; i++) {
-
-			final Object[] temp2 = {false,
-					temp[i][0],
-					temp[i][1],
-					temp[i][2],
-					temp[i][3],
-					temp[i][4]};
-
-			tableData[i] = temp2;
-
-		}
+		// Return to the frame.
 
 		loadingFrame.dispose();
 
@@ -391,7 +423,9 @@ public final class Texture_Patcher implements Runnable {
 
 	}
 
-	protected Object[][] loadTable (final JLabel modMessage, final JLabel modTitle) {
+	protected Object[][] loadTable (final JLabel modMessage, final JLabel modTitle) throws Texture_Patcher_Exception {
+
+		// Stores each row as an array of the column values.
 
 		final ArrayList<Object[]> rows = new ArrayList<Object[]>();
 
@@ -399,10 +433,14 @@ public final class Texture_Patcher implements Runnable {
 
 			int count = 0;
 
+			// Sort the JSON object.
+
 			@SuppressWarnings("unchecked")
 			final TreeMap<Object, Object> tmods = new TreeMap<Object, Object>(mods);
 
 			for (final Object omod : tmods.keySet()) {
+
+				// If the window was closed.
 
 				if (loadingFrame.isVisible() != true) {
 
@@ -411,6 +449,8 @@ public final class Texture_Patcher implements Runnable {
 				}
 
 				final String mod = (String) omod;
+
+				// URL of the mod zip.
 
 				final URL zipurl = new URL((String) options.get("zipsurl") + mod.replace(" ", "_") + ".zip");
 
@@ -424,64 +464,54 @@ public final class Texture_Patcher implements Runnable {
 
 					} catch (final IOException e) {
 
+						// Retrying in the case of a 502.
+
 						e.printStackTrace();
 
 						connection = zipurl.openConnection();
 
 					}
 
+					// CHeck if the file exists.
+
 					connection.getInputStream().close();
 
-					final Object[] row = new Object[5];
+					// Collect the data for the table.
 
-					row[0] = mod;
+					final Object[] row = new Object[6];
 
-					row[1] = ((JSONObject) mods.get(mod)).get("version") == null ? "Unknown" : (String)((JSONObject) mods.get(mod)).get("version");
-					row[2] = ((JSONObject) mods.get(mod)).get("mcversion") == null ? "Unknown" : (String)((JSONObject) mods.get(mod)).get("mcversion");
+					row[0] = false;
 
-					try {
+					row[1] = mod;
 
-						final int size = connection.getContentLength();
+					row[2] = ((JSONObject) mods.get(mod)).get("version") == null ? "Unknown" : (String)((JSONObject) mods.get(mod)).get("version");
+					row[3] = ((JSONObject) mods.get(mod)).get("mcversion") == null ? "Unknown" : (String)((JSONObject) mods.get(mod)).get("mcversion");
 
-						if (size == -1) {
+					final int size = connection.getContentLength();
 
-							row[3] = "Unknown";
-
-						} else {
-
-							if (size > 1024) row[3] = size / 1024 + " kb";
-							else row[3] = String.valueOf(size) + " bytes";
-
-						}
-
-					} catch (final Exception e) {
-
-						e.printStackTrace();
-
-						row[3] = "Unknown";
-
-					}
-
-					try {
-
-						row[4] = new Date(connection.getLastModified());
-
-					} catch (final Exception e) {
-
-						e.printStackTrace();
+					if (size == -1) {
 
 						row[4] = "Unknown";
 
+					} else {
+
+						if (size > 1024) row[4] = size / 1024 + " kb";
+						else row[4] = String.valueOf(size) + " bytes";
+
 					}
+
+					row[5] = new Date(connection.getLastModified());
 
 					rows.add(row);
 
 					modMessage.setText("Loading mod # " + count++);
-					modTitle.setText((String) row[0]);
+					modTitle.setText((String) row[1]);
 
-					System.out.println("Loading mod: " + row[0]);
+					System.out.println("Loading mod: " + row[1]);
 
 				} catch (final IOException e) {
+
+					// Happens if any error occurs while loading the mod.
 
 					e.printStackTrace();
 
@@ -493,9 +523,13 @@ public final class Texture_Patcher implements Runnable {
 
 		} catch (final Exception e) {
 
-			e.printStackTrace();
+			// Happens if an error occurs while loading the mods.
+
+			throw new Texture_Patcher_Exception(this, ErrorType.MOD_LOADING_FAILED, e);
 
 		}
+
+		// Collect the rows into an two dimensional array.
 
 		final Object[][] temp = new Object[rows.size()][];
 
@@ -510,44 +544,39 @@ public final class Texture_Patcher implements Runnable {
 
 	protected void loadModpacks () {
 
-		try {
+		// Iterate through the JSON modpack object.
 
-			for (final Object omodpack : modpacks.keySet()) {
+		for (final Object omodpack : modpacks.keySet()) {
 
-				try {
+			try {
 
-					final String modpack = (String) omodpack;
+				// Load the modpack and make sure that the modpack file exists.
 
-					final URL modpackURL = new URL((String) modpacks.get(modpack));
+				final String modpack = (String) omodpack;
 
-					modpackURL.openStream();
+				final URL modpackURL = new URL((String) modpacks.get(modpack));
 
-					System.out.println("Loading modpack: " + modpack);
+				modpackURL.openStream();
 
-				} catch (final Exception e) {
+				System.out.println("Loading modpack: " + modpack);
 
-					e.printStackTrace();
+			} catch (final Exception e) {
 
-					continue;
+				// Happens if any error occurs while loading the modpack.
 
-				}
+				e.printStackTrace();
+
+				continue;
 
 			}
-
-		} catch (final Exception e) {
-
-			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.MODPACK_LOADING_FAILED, e);
-
-			t_p_e.printStackTrace();
-
-			t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
 
 		}
 
 	}
 
-	@SuppressWarnings("unchecked")
 	protected void initializeComponents () {
+
+		// Initialize the path text field.
 
 		final Insets insets = new Insets(1, 3, 1, 3);
 
@@ -568,6 +597,8 @@ public final class Texture_Patcher implements Runnable {
 
 		frame.add(path, gbc);
 
+		// Initialize the browse button.
+
 		gbc = new GridBagConstraints();
 
 		gbc.gridx = 0;
@@ -584,6 +615,8 @@ public final class Texture_Patcher implements Runnable {
 
 		frame.add(browse, gbc);
 
+		// Initialize the download pack button.
+
 		gbc = new GridBagConstraints();
 
 		gbc.gridx = 1;
@@ -599,6 +632,8 @@ public final class Texture_Patcher implements Runnable {
 		downloadPack.addActionListener(new Listeners.DownloadPackListener(this));
 
 		frame.add(downloadPack, gbc);
+
+		// Initialize the check for updates button.
 
 		gbc = new GridBagConstraints();
 
@@ -617,6 +652,8 @@ public final class Texture_Patcher implements Runnable {
 
 		frame.add(checkUpdate, gbc);
 
+		// Initialize the patch button.
+
 		gbc = new GridBagConstraints();
 
 		gbc.gridx = 3;
@@ -634,6 +671,8 @@ public final class Texture_Patcher implements Runnable {
 
 		frame.add(patch, gbc);
 
+		// Resolve the preferences stored path and make sure it exists.
+
 		if (!path.getText().equals("") && new File(path.getText()).exists()) {
 
 			checkUpdate.setEnabled(true);
@@ -641,11 +680,13 @@ public final class Texture_Patcher implements Runnable {
 
 		} else {
 
-			path.setText("");
-
 			prefsnode.remove("path");
 
+			path.setText("");
+
 		}
+
+		// Initialize the table.
 
 		gbc = new GridBagConstraints();
 
@@ -667,6 +708,8 @@ public final class Texture_Patcher implements Runnable {
 
 		frame.add(new JScrollPane(table), gbc);
 
+		// Initialize the menu.
+
 		final JMenuBar menubar = new JMenuBar();
 
 		final JMenu menu = new JMenu("File");
@@ -683,13 +726,18 @@ public final class Texture_Patcher implements Runnable {
 
 		final ButtonGroup group = new ButtonGroup();
 
+		// Load the modpack menu items.
+
 		JRadioButtonMenuItem modpacksitems;
 
 		if (modpacks != null) {
 
-			for (final String modpack : new TreeSet<String>(modpacks.keySet())) {
+			@SuppressWarnings("unchecked")
+			final TreeMap<Object, Object> tmodpacks = new TreeMap<Object, Object>(modpacks);
 
-				modpacksitems = new JRadioButtonMenuItem(modpack);
+			for (final Object modpack : tmodpacks.keySet()) {
+
+				modpacksitems = new JRadioButtonMenuItem((String) modpack);
 				modpacksitems.setSelected(false);
 				modpacksitems.addActionListener(new Listeners.ModpackListener(this));
 				group.add(modpacksitems);
@@ -723,15 +771,11 @@ public final class Texture_Patcher implements Runnable {
 
 	}
 
-	protected void open () {
-
-		frame.setVisible(true);
-
-	}
-
 	protected void checkUpdate () {
 
 		try {
+
+			// Check for updates by comparing the internal version number with the server version number.
 
 			final URL versionurl = new URL("http://soartex.net/texture-patcher/latestversion.txt");
 
@@ -744,6 +788,8 @@ public final class Texture_Patcher implements Runnable {
 			}
 
 		} catch (final Exception e) {
+
+			// Happens if any error occurs while checking for updates.
 
 			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.UPDATE_CHECK_FAILED, e);
 
