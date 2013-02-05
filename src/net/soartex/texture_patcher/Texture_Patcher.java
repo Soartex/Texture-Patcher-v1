@@ -16,10 +16,8 @@ import java.net.URL;
 import java.net.URLConnection;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.prefs.Preferences;
 
@@ -59,12 +57,14 @@ public final class Texture_Patcher implements Runnable {
 	protected final static float VERSION = 1.1F;
 
 	protected final Preferences prefsnode = Preferences.userNodeForPackage(Texture_Patcher.class);
-	protected HashMap<String, String> config = new HashMap<String, String>();
+	protected JSONObject config;
+	protected JSONObject options;
+	protected JSONObject mods;
+	protected JSONObject modpacks;
 
 	protected static boolean debug = false;
 
 	protected Object[][] tableData;
-	protected HashMap<String, URL> modpacks;
 
 	// Swing objects.
 
@@ -158,22 +158,19 @@ public final class Texture_Patcher implements Runnable {
 
 			// Loads the JSON file.
 
-			config = (HashMap<String, String>) new JSONParser().parse(new InputStreamReader(new URL(readLine).openStream()));
+			config = (JSONObject) new JSONParser().parse(new InputStreamReader(new URL(readLine).openStream()));
+
+			options = (JSONObject) config.get("options");
+			mods = (JSONObject) config.get("mods");
+			modpacks = (JSONObject) config.get("modpacks");
 
 			// Checks if the root or zips URLs are missing.
 
-			if (config.get("rooturl") == null || config.get("zipsurl") == null)
+			if (options.get("zipsurl") == null)
 
 				throw new Texture_Patcher_Exception(this, ErrorType.CONFIG_INCOMPLETE, null);
 
-			// Resolves file URLs based on the root URL.
-
-			final String rooturl = config.get("rooturl");
-
-			config.put("modsurl", rooturl + "/mods.json");
-			config.put("modpacksurl", rooturl + "/modpacks.json");
-
-			if (config.get("name") == null) config.put("name", "Texture Patcher");
+			if (options.get("name") == null) options.put("name", "Texture Patcher");
 
 			// Determine errors.
 
@@ -221,9 +218,9 @@ public final class Texture_Patcher implements Runnable {
 
 		try {
 
-			if (config.get("skin") != null) {
+			if ((String) options.get("skin") != null) {
 
-				if (config.get("skin").equals("native")) {
+				if (options.get("skin").equals("native")) {
 
 					UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 
@@ -231,7 +228,7 @@ public final class Texture_Patcher implements Runnable {
 
 					for (final LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
 
-						if (info.getName().equalsIgnoreCase(config.get("skin"))) {
+						if (info.getName().equalsIgnoreCase((String) options.get("skin"))) {
 
 							UIManager.setLookAndFeel(info.getClassName());
 
@@ -259,7 +256,7 @@ public final class Texture_Patcher implements Runnable {
 
 		// Configure the frame.
 
-		frame = new JFrame(config.get("name") + (config.get("name").equals("Texture Patcher") ? " v." : " Patcher v."  ) + VERSION);
+		frame = new JFrame((String) options.get("name") + (options.get("name").equals("Texture Patcher") ? " v." : " Patcher v."  ) + VERSION);
 		frame.setLayout(new GridBagLayout());
 
 		frame.setLocation(50, 50);
@@ -271,7 +268,7 @@ public final class Texture_Patcher implements Runnable {
 
 		try {
 
-			final URL iconurl = new URL(config.get("iconurl") == null ? "http://soartex.net/texture-patcher/icon.png" : config.get("iconurl"));
+			final URL iconurl = new URL(options.get("iconurl") == null ? "http://soartex.net/texture-patcher/icon.png" : (String) options.get("iconurl"));
 
 			frame.setIconImage(Toolkit.getDefaultToolkit().createImage(iconurl));
 
@@ -396,11 +393,12 @@ public final class Texture_Patcher implements Runnable {
 
 		try {
 
-			final JSONObject mods = (JSONObject) new JSONParser().parse(new InputStreamReader(new URL(config.get("modsurl")).openStream()));
-
 			int count = 0;
 
-			for (final Object omod : mods.keySet()) {
+			@SuppressWarnings("unchecked")
+			final TreeMap<Object, Object> tmods = new TreeMap<Object, Object>(mods);
+
+			for (final Object omod : tmods.keySet()) {
 
 				if (loadingFrame.isVisible() != true) {
 
@@ -410,7 +408,7 @@ public final class Texture_Patcher implements Runnable {
 
 				final String mod = (String) omod;
 
-				final URL zipurl = new URL(config.get("zipsurl") + mod.replace(" ", "_") + ".zip");
+				final URL zipurl = new URL((String) options.get("zipsurl") + mod.replace(" ", "_") + ".zip");
 
 				try {
 
@@ -495,19 +493,6 @@ public final class Texture_Patcher implements Runnable {
 
 		}
 
-		Collections.sort(rows, new Comparator<Object[]>() {
-
-			@Override public int compare(final Object[] o1, final Object[] o2) {
-
-				final String a = (String) o1[0];
-				final String b = (String) o2[0];
-
-				return a.compareTo(b);
-
-			}
-
-		});
-
 		final Object[][] temp = new Object[rows.size()][];
 
 		for (int i = 0; i < rows.size(); i++){
@@ -521,23 +506,17 @@ public final class Texture_Patcher implements Runnable {
 
 	protected void loadModpacks () {
 
-		modpacks = new HashMap<String, URL>();
-
 		try {
 
-			final JSONObject jsonModpacks = (JSONObject) new JSONParser().parse(new InputStreamReader(new URL(config.get("modpacksurl")).openStream()));
-
-			for (final Object omodpack : jsonModpacks.keySet()) {
+			for (final Object omodpack : modpacks.keySet()) {
 
 				try {
 
 					final String modpack = (String) omodpack;
 
-					final URL modpackURL = new URL(config.get("rooturl") + jsonModpacks.get(modpack));
+					final URL modpackURL = new URL((String) modpacks.get(modpack));
 
 					modpackURL.openStream();
-
-					modpacks.put(modpack, modpackURL);
 
 					System.out.println("Loading modpack: " + modpack);
 
@@ -563,6 +542,7 @@ public final class Texture_Patcher implements Runnable {
 
 	}
 
+	@SuppressWarnings("unchecked")
 	protected void initializeComponents () {
 
 		final Insets insets = new Insets(1, 3, 1, 3);
@@ -687,9 +667,9 @@ public final class Texture_Patcher implements Runnable {
 
 		final JMenu menu = new JMenu("File");
 
-		if (config.get("url") != null) {
+		if ((String) options.get("url") != null) {
 
-			final JMenuItem website = new JMenuItem(config.get("name") + " Website");
+			final JMenuItem website = new JMenuItem((String) options.get("name") + " Website");
 			website.addActionListener(new Listeners.WebsiteListener(this));
 			menu.add(website);
 

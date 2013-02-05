@@ -101,7 +101,7 @@ final class Listeners {
 
 			try {
 
-				Desktop.getDesktop().browse(new URI(t_p.config.get("url")));
+				Desktop.getDesktop().browse(new URI((String) t_p.options.get("url")));
 
 			} catch (final Exception e1) {
 
@@ -147,13 +147,13 @@ final class Listeners {
 
 			} else {
 
-				for (final String modpack : t_p.modpacks.keySet()){
+				for (final Object modpack : t_p.modpacks.keySet()){
 
 					if (e.getActionCommand().equals(modpack)) {
 
 						try {
 
-							final BufferedReader in = new BufferedReader(new InputStreamReader(t_p.modpacks.get(modpack).openStream()));
+							final BufferedReader in = new BufferedReader(new InputStreamReader(new URL((String) t_p.modpacks.get(modpack)).openStream()));
 
 							for (int i = 0; i < t_p.tableData.length; i++) {
 
@@ -274,7 +274,7 @@ final class Listeners {
 
 		@Override public void actionPerformed (final ActionEvent e) {
 
-			if (t_p.config.get("packurl") == null) {
+			if (t_p.options.get("packurl") == null) {
 
 				JOptionPane.showMessageDialog(t_p.frame, "The texture-artist has not provided a URL for a pack to download!", "Error!", JOptionPane.ERROR_MESSAGE);
 
@@ -364,7 +364,7 @@ final class Listeners {
 
 			try {
 
-				final URL packurl = new URL(t_p.config.get("packurl"));
+				final URL packurl = new URL((String) t_p.options.get("packurl"));
 
 				float size = 0;
 
@@ -390,7 +390,7 @@ final class Listeners {
 
 				}
 
-				System.out.println("Downloading: " + t_p.config.get("packurl"));
+				System.out.println("Downloading: " + t_p.options.get("packurl"));
 
 				final float progressamount = size / 102400;
 				float progresscount = 0;
@@ -935,7 +935,7 @@ final class Listeners {
 
 				try {
 
-					final String modurl = t_p.config.get("zipsurl") + mod.replace(" ", "_") + ".zip";
+					final String modurl = t_p.options.get("zipsurl") + mod.replace(" ", "_") + ".zip";
 
 					InputStream in;
 
