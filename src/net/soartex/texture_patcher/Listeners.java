@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -391,7 +392,7 @@ final class Listeners {
 
 				}
 
-				System.out.println("Downloading: " + t_p.options.get("packurl"));
+				t_p.logger.log(Level.INFO, "Downloading: " + t_p.options.get("packurl"));
 
 				final float progressamount = size / 102400;
 				float progresscount = 0;
@@ -524,7 +525,7 @@ final class Listeners {
 
 						try {
 
-							System.out.println("Extracting: " + destinationFile.getAbsolutePath());
+							t_p.logger.log(Level.INFO, "Extracting: " + destinationFile.getAbsolutePath());
 
 							new File(destinationFile.getParent()).mkdirs();
 
@@ -792,7 +793,7 @@ final class Listeners {
 
 						try {
 
-							System.out.println("Extracting: " + destinationFile.getAbsolutePath());
+							t_p.logger.log(Level.INFO, "Extracting: " + destinationFile.getAbsolutePath());
 
 							new File(destinationFile.getParent()).mkdirs();
 
@@ -952,7 +953,7 @@ final class Listeners {
 
 					}
 
-					System.out.println("Downloading: " + mod);
+					t_p.logger.log(Level.INFO, "Downloading: " + mod);
 
 					progressdialog.setString("Downloading mod (" + ++count + "/" + modslist.size() + ")");
 
@@ -996,7 +997,7 @@ final class Listeners {
 
 			for (final File file : files) {
 
-				System.out.println("Extracting: " + file.getName());
+				t_p.logger.log(Level.INFO, "Extracting: " + file.getName());
 
 				progressdialog.setString("Extracting mod (" + ++count + "/" + files.size() + ")");
 
@@ -1068,7 +1069,7 @@ final class Listeners {
 				final FileOutputStream out = new FileOutputStream(new File(t_p.path.getText()));
 				final ZipOutputStream zipout = new ZipOutputStream(out);
 
-				System.out.println("Compiling zip: " + new File(t_p.path.getText()).getAbsolutePath());
+				t_p.logger.log(Level.INFO, "Compiling zip: " + new File(t_p.path.getText()).getAbsolutePath());
 
 				final ArrayList<File> files = new ArrayList<File>();
 
@@ -1086,7 +1087,7 @@ final class Listeners {
 					final String temp = file.getAbsolutePath().substring(file.getAbsolutePath().indexOf(TEMP_A.getName()), file.getAbsolutePath().length());
 					final String zipentrypath = temp.substring(temp.indexOf(File.separator) + 1, temp.length());
 
-					System.out.println("Compressing: " + zipentrypath);
+					t_p.logger.log(Level.INFO, "Compressing: " + zipentrypath);
 
 					progressdialog.setString("Compressing texture pack file (" + ++count + "/" + files.size() + ")");
 

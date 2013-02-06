@@ -19,6 +19,8 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
 import javax.swing.ButtonGroup;
@@ -55,14 +57,15 @@ public final class Texture_Patcher implements Runnable {
 	// Program variables.
 
 	protected final static float VERSION = 1.1F;
+	protected static boolean debug = false;
 
-	protected final Preferences prefsnode = Preferences.userNodeForPackage(Texture_Patcher.class);
+	protected final Preferences prefsnode = Preferences.userNodeForPackage(getClass());
+	protected final Logger logger = Logger.getLogger(getClass().getName());
+
 	protected JSONObject config;
 	protected JSONObject options;
 	protected JSONObject mods;
 	protected JSONObject modpacks;
-
-	protected static boolean debug = false;
 
 	protected Object[][] tableData;
 
@@ -105,6 +108,10 @@ public final class Texture_Patcher implements Runnable {
 
 		try {
 
+			// Initialize the logger.
+
+			initializeLogger();
+
 			// Load the configuration.
 
 			loadConfig();
@@ -139,6 +146,8 @@ public final class Texture_Patcher implements Runnable {
 
 			e.printStackTrace();
 
+			logger.log(Level.SEVERE, e.getMessage());
+
 			if (e.getType() != ErrorType.WINDOW_CLOSED) e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
 
 			if (frame != null) frame.dispose();
@@ -150,6 +159,8 @@ public final class Texture_Patcher implements Runnable {
 
 			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.UNEXPECTED_EXCEPTION, e);
 
+			logger.log(Level.SEVERE, t_p_e.getMessage());
+
 			t_p_e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
 
 			if (frame != null) frame.dispose();
@@ -160,6 +171,20 @@ public final class Texture_Patcher implements Runnable {
 	}
 
 	// Protected methods.
+
+	protected void initializeLogger () {
+
+		// Initialize the logger with the custom handlers and formatters.
+
+		logger.setLevel(Level.INFO);
+
+		final LoggingHandler handler = new LoggingHandler();
+		handler.setFormatter(new LoggingFormatter());
+
+		logger.addHandler(handler);
+		logger.setUseParentHandlers(false);
+
+	}
 
 	@SuppressWarnings("unchecked")
 	protected void loadConfig () throws Texture_Patcher_Exception {
@@ -450,6 +475,8 @@ public final class Texture_Patcher implements Runnable {
 
 				final String mod = (String) omod;
 
+				if (mod.equals("")) continue;
+
 				// URL of the mod zip.
 
 				final URL zipurl = new URL((String) options.get("zipsurl") + mod.replace(" ", "_") + ".zip");
@@ -465,8 +492,6 @@ public final class Texture_Patcher implements Runnable {
 					} catch (final IOException e) {
 
 						// Retrying in the case of a 502.
-
-						e.printStackTrace();
 
 						connection = zipurl.openConnection();
 
@@ -507,13 +532,15 @@ public final class Texture_Patcher implements Runnable {
 					modMessage.setText("Loading mod # " + count++);
 					modTitle.setText((String) row[1]);
 
-					System.out.println("Loading mod: " + row[1]);
+					logger.log(Level.INFO, "Loading mod: " + row[1]);
 
 				} catch (final IOException e) {
 
 					// Happens if any error occurs while loading the mod.
 
 					e.printStackTrace();
+
+					logger.log(Level.WARNING, "Unable to load mod " + mod);
 
 					continue;
 
@@ -548,23 +575,25 @@ public final class Texture_Patcher implements Runnable {
 
 		for (final Object omodpack : modpacks.keySet()) {
 
+			final String modpack = (String) omodpack;
+
 			try {
 
 				// Load the modpack and make sure that the modpack file exists.
-
-				final String modpack = (String) omodpack;
 
 				final URL modpackURL = new URL((String) modpacks.get(modpack));
 
 				modpackURL.openStream();
 
-				System.out.println("Loading modpack: " + modpack);
+				logger.log(Level.INFO, "Loading modpack: " + modpack);
 
 			} catch (final Exception e) {
 
 				// Happens if any error occurs while loading the modpack.
 
 				e.printStackTrace();
+
+				logger.log(Level.WARNING, "Unable to load modpack " + modpack);
 
 				continue;
 
