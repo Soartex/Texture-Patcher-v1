@@ -144,22 +144,20 @@ public final class Texture_Patcher implements Runnable {
 
 			// Happens in the event of a caught but fatal error.
 
-			e.printStackTrace();
-
-			logger.log(Level.SEVERE, e.getMessage());
-
 			if (e.getType() != ErrorType.WINDOW_CLOSED) e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
 
 			if (frame != null) frame.dispose();
 			if (loadingFrame != null) loadingFrame.dispose();
 
-		} catch (final Exception e) {
+		} catch (final Throwable t) {
 
 			// Happens in the event of an uncaught error.
 
-			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.UNEXPECTED_EXCEPTION, e);
+			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.UNEXPECTED_EXCEPTION, t);
 
 			logger.log(Level.SEVERE, t_p_e.getMessage());
+
+			t_p_e.printStackTrace();
 
 			t_p_e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
 
@@ -199,9 +197,15 @@ public final class Texture_Patcher implements Runnable {
 
 				readLine = new BufferedReader(new InputStreamReader(getClass().getClassLoader().getResource("externalconfig.txt").openStream())).readLine();
 
-			else if (!debug)
+			else if (!debug) {
 
-				throw new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_MISSING, null);
+				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_MISSING, null);
+
+				logger.log(Level.SEVERE, t_p_e.getMessage());
+
+				throw t_p_e;
+
+			}
 
 			// Used for testing.
 
@@ -209,9 +213,15 @@ public final class Texture_Patcher implements Runnable {
 
 			// Checks if the externalconfig.txt is the default.
 
-			if (readLine.startsWith("#"))
+			if (readLine.startsWith("#")) {
 
-				throw new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_DEFAULT, null);
+				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_DEFAULT, null);
+
+				logger.log(Level.SEVERE, t_p_e.getMessage());
+
+				throw t_p_e;
+
+			}
 
 			// Loads the JSON file.
 
@@ -223,9 +233,15 @@ public final class Texture_Patcher implements Runnable {
 
 			// Checks if the root or zips URLs are missing.
 
-			if (options.get("zipsurl") == null)
+			if (options.get("zipsurl") == null) {
 
-				throw new Texture_Patcher_Exception(this, ErrorType.CONFIG_INCOMPLETE, null);
+				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.CONFIG_INCOMPLETE, null);
+
+				logger.log(Level.SEVERE, t_p_e.getMessage());
+
+				throw t_p_e;
+
+			}
 
 			if (options.get("name") == null) options.put("name", "Texture Patcher");
 
@@ -233,25 +249,43 @@ public final class Texture_Patcher implements Runnable {
 
 		} catch (final FileNotFoundException e) {
 
-			throw new Texture_Patcher_Exception(this, ErrorType.CONFIG_NOT_FOUND, e);
+			// Happens if the file cannot be found on the server.
+
+			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.CONFIG_INCOMPLETE, null);
+
+			logger.log(Level.SEVERE, t_p_e.getMessage());
+
+			throw t_p_e;
 
 		} catch (final MalformedURLException e) {
 
 			// Happens if the URL in the externalconfig.txt is malformed.
 
-			throw new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_BAD, e);
+			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_BAD, null);
+
+			logger.log(Level.SEVERE, t_p_e.getMessage());
+
+			throw t_p_e;
 
 		} catch (final IOException e) {
 
 			// Happens if the URL's host cannot be resolved.
 
-			throw new Texture_Patcher_Exception(this, ErrorType.CANNOT_FIND_SERVER, e);
+			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.CANNOT_FIND_SERVER, null);
+
+			logger.log(Level.SEVERE, t_p_e.getMessage());
+
+			throw t_p_e;
 
 		} catch (final ParseException e) {
 
 			// Happens if the config file cannot be parsed as JSON.
 
-			throw new Texture_Patcher_Exception(this, ErrorType.CONFIG_BAD, e);
+			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.CONFIG_BAD, null);
+
+			logger.log(Level.SEVERE, t_p_e.getMessage());
+
+			throw t_p_e;
 
 		} catch (final Texture_Patcher_Exception e) {
 
@@ -263,7 +297,11 @@ public final class Texture_Patcher implements Runnable {
 
 			// Happens for all other errors.
 
-			throw new Texture_Patcher_Exception(this, ErrorType.CONFIG_LOADING_FAILED, e);
+			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.CONFIG_LOADING_FAILED, null);
+
+			logger.log(Level.SEVERE, t_p_e.getMessage());
+
+			throw t_p_e;
 
 		}
 
@@ -305,7 +343,7 @@ public final class Texture_Patcher implements Runnable {
 
 			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.SETTING_SKIN_FAILED, e);
 
-			t_p_e.printStackTrace();
+			logger.log(Level.WARNING, t_p_e.getMessage());
 
 			t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
 
@@ -338,7 +376,7 @@ public final class Texture_Patcher implements Runnable {
 
 			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.SETTING_ICON_FAILED, e);
 
-			t_p_e.printStackTrace();
+			logger.log(Level.WARNING, t_p_e.getMessage());
 
 			t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
 
@@ -493,6 +531,8 @@ public final class Texture_Patcher implements Runnable {
 
 						// Retrying in the case of a 502.
 
+						logger.log(Level.WARNING, "IOException while loading mod " + mod + ", trying again!");
+
 						connection = zipurl.openConnection();
 
 					}
@@ -532,7 +572,7 @@ public final class Texture_Patcher implements Runnable {
 					modMessage.setText("Loading mod # " + count++);
 					modTitle.setText((String) row[1]);
 
-					logger.log(Level.INFO, "Loading mod: " + row[1]);
+					logger.log(Level.INFO, "Loading mod: " + mod + ".");
 
 				} catch (final IOException e) {
 
@@ -540,7 +580,7 @@ public final class Texture_Patcher implements Runnable {
 
 					e.printStackTrace();
 
-					logger.log(Level.WARNING, "Unable to load mod " + mod);
+					logger.log(Level.WARNING, "Unable to load mod " + mod + ".");
 
 					continue;
 
@@ -585,7 +625,7 @@ public final class Texture_Patcher implements Runnable {
 
 				modpackURL.openStream();
 
-				logger.log(Level.INFO, "Loading modpack: " + modpack);
+				logger.log(Level.INFO, "Loading modpack: " + modpack + ".");
 
 			} catch (final Exception e) {
 
@@ -593,7 +633,7 @@ public final class Texture_Patcher implements Runnable {
 
 				e.printStackTrace();
 
-				logger.log(Level.WARNING, "Unable to load modpack " + modpack);
+				logger.log(Level.WARNING, "Unable to load modpack " + modpack + ".");
 
 				continue;
 
@@ -733,7 +773,7 @@ public final class Texture_Patcher implements Runnable {
 		table.setAutoCreateRowSorter(true);
 		table.getTableHeader().setReorderingAllowed(false);
 		table.getColumnModel().getColumn(0).setMaxWidth(25);
-		table.addMouseListener(new Listeners.TableListener(table, this));
+		table.addMouseListener(new Listeners.TableListener(this));
 
 		frame.add(new JScrollPane(table), gbc);
 
@@ -822,7 +862,7 @@ public final class Texture_Patcher implements Runnable {
 
 			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.UPDATE_CHECK_FAILED, e);
 
-			t_p_e.printStackTrace();
+			logger.log(Level.WARNING, t_p_e.getMessage());
 
 			t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
 

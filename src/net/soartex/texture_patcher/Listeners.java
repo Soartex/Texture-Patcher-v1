@@ -42,7 +42,6 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
-import javax.swing.JTable;
 import javax.swing.SwingConstants;
 import javax.swing.WindowConstants;
 
@@ -50,15 +49,15 @@ import javax.swing.filechooser.FileFilter;
 
 final class Listeners {
 
-	protected static final class TableListener implements MouseListener {
+	// Listener classes.
 
-		protected final JTable table;
+	protected static final class TableListener implements MouseListener {
 
 		protected final Texture_Patcher t_p;
 
-		protected TableListener (final JTable table, final Texture_Patcher t_p) {
+		protected TableListener (final Texture_Patcher t_p) {
 
-			this.table = table;
+			// Receive the texture patcher instance for the listener.
 
 			this.t_p = t_p;
 
@@ -66,13 +65,17 @@ final class Listeners {
 
 		@Override public void mouseClicked (final MouseEvent e) {
 
-			final int row = table.rowAtPoint(e.getPoint());
-			final int column = table.columnAtPoint(e.getPoint());
+			// Calculate the column and row on the table.
+
+			final int row = t_p.table.rowAtPoint(e.getPoint());
+			final int column = t_p.table.columnAtPoint(e.getPoint());
+
+			// If the column is the checkbox column, toggle the boolean value.
 
 			if (column == 0) {
 
-				table.setValueAt(!((Boolean) table.getValueAt(row, column)), row, column);
-				table.updateUI();
+				t_p.table.setValueAt(!((Boolean) t_p.table.getValueAt(row, column)), row, column);
+				t_p.table.updateUI();
 
 			}
 
@@ -95,11 +98,15 @@ final class Listeners {
 
 		protected WebsiteListener (final Texture_Patcher t_p) {
 
+			// Receive the texture patcher instance for the listener.
+
 			this.t_p = t_p;
 
 		}
 
 		@Override public void actionPerformed (final ActionEvent e) {
+
+			// Navigate to the URL specified by the configuration.
 
 			try {
 
@@ -107,7 +114,13 @@ final class Listeners {
 
 			} catch (final Exception e1) {
 
-				e1.printStackTrace();
+				// Happens if unable to open the URL.
+
+				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(t_p, ErrorType.WEBSITE_FAILED, e1);
+
+				t_p.logger.log(Level.WARNING, t_p_e.getMessage());
+
+				t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
 
 			}
 
@@ -121,6 +134,8 @@ final class Listeners {
 
 		protected ModpackListener (final Texture_Patcher t_p) {
 
+			// Receive the texture patcher instance for the listener.
+
 			this.t_p = t_p;
 
 		}
@@ -128,6 +143,8 @@ final class Listeners {
 		@Override public void actionPerformed (final ActionEvent e) {
 
 			if (e.getActionCommand().equals("Select All")) {
+
+				// Select all of the mods.
 
 				for (int i = 0; i < t_p.tableData.length; i++) {
 
@@ -139,6 +156,8 @@ final class Listeners {
 
 			} else if (e.getActionCommand().equals("Select None")) {
 
+				// Deselect all of the mods.
+
 				for (int i = 0; i < t_p.tableData.length; i++){
 
 					t_p.tableData[i][0]= false;
@@ -148,6 +167,8 @@ final class Listeners {
 				t_p.table.updateUI();
 
 			} else {
+
+				// Check mods based on the selected modpack.
 
 				for (final Object modpack : t_p.modpacks.keySet()){
 
@@ -171,17 +192,9 @@ final class Listeners {
 
 								for (int i = 0; i < t_p.tableData.length; i++) {
 
-									try {
+									if (readline.replace("_", " ").equals(t_p.tableData[i][1])) {
 
-										if (readline.replace(" ", "").replace("_", " ").equals(t_p.tableData[i][1])) {
-
-											t_p.tableData[i][0] = true;
-
-										}
-
-									} catch (final Exception e2) {
-
-										e2.printStackTrace();
+										t_p.tableData[i][0] = true;
 
 									}
 
@@ -191,7 +204,13 @@ final class Listeners {
 
 						} catch (final IOException e1) {
 
-							e1.printStackTrace();
+							// Happens if unable to load modpack file.
+
+							final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(t_p, ErrorType.MODPACK_FAILED, e1);
+
+							t_p.logger.log(Level.WARNING, t_p_e.getMessage());
+
+							t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
 
 						}
 
@@ -213,16 +232,22 @@ final class Listeners {
 
 		protected BrowseListener (final Texture_Patcher t_p) {
 
+			// Receive the texture patcher instance for the listener.
+
 			this.t_p = t_p;
 
 		}
 
 		@Override public void actionPerformed (final ActionEvent e) {
 
+			// Initialize the file chooser.
+
 			final JFileChooser fileChooser = new JFileChooser();
 
 			fileChooser.setAcceptAllFileFilterUsed(false);
 			fileChooser.setFileFilter(new ZipFileFilter());
+
+			// Resolve the stored directory and files.
 
 			final File lastDir = new File(t_p.prefsnode.get("lastDir", System.getProperty("user.dir")));
 
@@ -245,6 +270,8 @@ final class Listeners {
 			}
 
 			if (fileChooser.showOpenDialog(t_p.frame) != JFileChooser.APPROVE_OPTION) return;
+
+			// Save the selected file.
 
 			final File file = fileChooser.getSelectedFile();
 
@@ -270,11 +297,15 @@ final class Listeners {
 
 		protected DownloadPackListener (final Texture_Patcher t_p) {
 
+			// Receive the texture patcher instance for the listener.
+
 			this.t_p = t_p;
 
 		}
 
 		@Override public void actionPerformed (final ActionEvent e) {
+
+			// Check if the texture artist has provided a pack URL.
 
 			if (t_p.options.get("packurl") == null) {
 
@@ -284,7 +315,11 @@ final class Listeners {
 
 			}
 
+			// Open the browse dialog, and check if a file has been selected.
+
 			if (!openBrowseDialog()) return;
+
+			// Start the downloading process.
 
 			new Thread(this).start();
 
@@ -292,10 +327,14 @@ final class Listeners {
 
 		protected boolean openBrowseDialog () {
 
+			// Initialize the file chooser.
+
 			final JFileChooser fileChooser = new JFileChooser();
 
 			fileChooser.setAcceptAllFileFilterUsed(false);
 			fileChooser.setFileFilter(new ZipFileFilter());
+
+			// Resolve the stored directory and files.
 
 			final File lastDir = new File(t_p.prefsnode.get("lastDir", System.getProperty("user.dir")));
 
@@ -310,6 +349,8 @@ final class Listeners {
 				t_p.prefsnode.remove("lastDir");
 
 			}
+
+			// Loop for overwrite dialog.
 
 			while (true) {
 
@@ -341,6 +382,8 @@ final class Listeners {
 
 			}
 
+			// Adds .zip to the filename if it isn't present.
+
 			if (fileChooser.getSelectedFile().getAbsolutePath().endsWith(".zip")) {
 
 				file = fileChooser.getSelectedFile().getAbsoluteFile();
@@ -357,6 +400,8 @@ final class Listeners {
 
 		@Override public void run () {
 
+			// Initialize the progress dialog.
+
 			progressdialog = new ProgressDialog(t_p);
 
 			progressdialog.setProgressValue(0);
@@ -365,6 +410,8 @@ final class Listeners {
 			progressdialog.open();
 
 			try {
+
+				// Download the pack.
 
 				final URL packurl = new URL((String) t_p.options.get("packurl"));
 
@@ -384,7 +431,9 @@ final class Listeners {
 
 				} catch (final IOException e) {
 
-					e.printStackTrace();
+					// Retrying in the case of a 502.
+
+					t_p.logger.log(Level.WARNING, "IOException while downloading the texture-pack, trying again!");
 
 					final URLConnection connection = packurl.openConnection();
 
@@ -392,7 +441,7 @@ final class Listeners {
 
 				}
 
-				t_p.logger.log(Level.INFO, "Downloading: " + t_p.options.get("packurl"));
+				t_p.logger.log(Level.INFO, "Downloading: " + t_p.options.get("packurl") + ".");
 
 				final float progressamount = size / 102400;
 				float progresscount = 0;
@@ -421,9 +470,17 @@ final class Listeners {
 
 			} catch (final Exception e) {
 
-				e.printStackTrace();
+				// Happens if an error occurs while downloading the texture-pack.
+
+				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(t_p, ErrorType.PACK_FAILED, e);
+
+				t_p.logger.log(Level.SEVERE, t_p_e.getMessage());
+
+				t_p_e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
 
 			}
+
+			// Close the progress dialog.
 
 			progressdialog.setString("Done!");
 			progressdialog.setProgressValue(100);
@@ -431,6 +488,8 @@ final class Listeners {
 			delay(1500);
 
 			progressdialog.close();
+
+			// Update the path field, buttons, and stored paths.
 
 			t_p.path.setText(file.getAbsolutePath());
 
@@ -477,19 +536,6 @@ final class Listeners {
 			checkUpdate();
 
 			delete(TEMP_C);
-
-		}
-
-		protected String getTMP () {
-
-			final String OS = System.getProperty("os.name").toUpperCase();
-
-			if (OS.contains("WIN")) return System.getenv("TMP");
-
-			else if (OS.contains("MAC") || OS.contains("DARWIN")) return System.getProperty("user.home") + "/Library/Caches/";
-			else if (OS.contains("NUX")) return System.getProperty("user.home");
-
-			return System.getProperty("user.dir");
 
 		}
 
@@ -648,26 +694,6 @@ final class Listeners {
 
 		}
 
-		protected void delete (final File f) {
-
-			f.delete();
-
-			if (f.isFile()) return;
-
-			final File[] files = f.getAbsoluteFile().listFiles();
-
-			if (files == null) return;
-
-			for (final File file : files) {
-
-				delete(file);
-
-				f.delete();
-
-			}
-
-		}
-
 	}
 
 	protected static final class PatchListener implements ActionListener, Runnable {
@@ -683,19 +709,6 @@ final class Listeners {
 		protected PatchListener (final Texture_Patcher t_p) {
 
 			this.t_p = t_p;
-
-		}
-
-		protected String getTMP () {
-
-			final String OS = System.getProperty("os.name").toUpperCase();
-
-			if (OS.contains("WIN")) return System.getenv("TMP");
-
-			else if (OS.contains("MAC") || OS.contains("DARWIN")) return System.getProperty("user.home") + "/Library/Caches/";
-			else if (OS.contains("NUX")) return System.getProperty("user.home");
-
-			return System.getProperty("user.dir");
 
 		}
 
@@ -1142,44 +1155,6 @@ final class Listeners {
 
 		}
 
-		protected void getFiles (final File f, final ArrayList<File> files) {
-
-			if (f.isFile()) return;
-
-			final File[] afiles = f.getAbsoluteFile().listFiles();
-
-			if (afiles == null) return;
-
-			for (final File file : afiles) {
-
-				if (file.isDirectory()) getFiles(file, files);
-
-				else files.add(file.getAbsoluteFile());
-
-			}
-
-		}
-
-		protected void delete (final File f) {
-
-			f.delete();
-
-			if (f.isFile()) return;
-
-			final File[] files = f.getAbsoluteFile().listFiles();
-
-			if (files == null) return;
-
-			for (final File file : files) {
-
-				delete(file);
-
-				f.delete();
-
-			}
-
-		}
-
 	}
 
 	protected static final class ExitListener implements WindowListener {
@@ -1231,6 +1206,8 @@ final class Listeners {
 		@Override public void windowOpened (final WindowEvent arg0) {}
 
 	}
+
+	// Shared classes.
 
 	protected static final class ZipFileFilter extends FileFilter {
 
@@ -1342,6 +1319,21 @@ final class Listeners {
 
 	}
 
+	// Shared methods.
+
+	protected static String getTMP () {
+
+		final String OS = System.getProperty("os.name").toUpperCase();
+
+		if (OS.contains("WIN")) return System.getenv("TMP");
+
+		else if (OS.contains("MAC") || OS.contains("DARWIN")) return System.getProperty("user.home") + "/Library/Caches/";
+		else if (OS.contains("NUX")) return System.getProperty("user.home");
+
+		return System.getProperty("user.dir");
+
+	}
+
 	protected static void delay (final long time) {
 
 		try {
@@ -1351,6 +1343,44 @@ final class Listeners {
 		} catch (final Exception e) {
 
 			e.printStackTrace();
+
+		}
+
+	}
+
+	protected static void getFiles (final File f, final ArrayList<File> files) {
+
+		if (f.isFile()) return;
+
+		final File[] afiles = f.getAbsoluteFile().listFiles();
+
+		if (afiles == null) return;
+
+		for (final File file : afiles) {
+
+			if (file.isDirectory()) getFiles(file, files);
+
+			else files.add(file.getAbsoluteFile());
+
+		}
+
+	}
+
+	protected static void delete (final File f) {
+
+		f.delete();
+
+		if (f.isFile()) return;
+
+		final File[] files = f.getAbsoluteFile().listFiles();
+
+		if (files == null) return;
+
+		for (final File file : files) {
+
+			delete(file);
+
+			f.delete();
 
 		}
 

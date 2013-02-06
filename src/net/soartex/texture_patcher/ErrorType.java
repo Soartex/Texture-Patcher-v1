@@ -20,7 +20,13 @@ enum ErrorType {
 
 	MOD_LOADING_FAILED ("An error occured while loading the mods!"),
 
-	UPDATE_CHECK_FAILED ("Unable to check for updates!");
+	UPDATE_CHECK_FAILED ("Unable to check for updates!"),
+
+	WEBSITE_FAILED ("Unable to open the website link!"),
+
+	MODPACK_FAILED ("Unable to open the modpack's data!"),
+
+	PACK_FAILED ("An error occured while downloading the texture-pack!");
 
 	private String message;
 
