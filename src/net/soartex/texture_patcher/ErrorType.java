@@ -2,31 +2,49 @@ package net.soartex.texture_patcher;
 
 enum ErrorType {
 
-	UNEXPECTED_EXCEPTION ("An unexpected exception occured!"),
+	// General
 
-	WINDOW_CLOSED        ("The window was closed! (This ErrorType is used for technical purposes.)"),
-	CANNOT_FIND_SERVER   ("Could not connect to the server! Perhaps you have no internet?"),
+	UNEXPECTED_EXCEPTION ("An unexpected exception occured!"),
+	WINDOW_CLOSED        ("The window was closed!"),
+
+	// Loading the config.
 
 	EXTERNAL_CONFIG_MISSING ("The externalconfig.txt file is missing!"),
 	EXTERNAL_CONFIG_DEFAULT ("The externalconfig.txt file is the default!"),
-	EXTERNAL_CONFIG_BAD     ("The URL in the externalconfig.txt file is bad!"),
 	CONFIG_INCOMPLETE       ("The configuration file is incomplete!"),
-	CONFIG_BAD              ("The configuration file could not be parsed as JSON!"),
-	CONFIG_NOT_FOUND        ("The configuration file could not be found on the server!"),
 	CONFIG_LOADING_FAILED   ("An error occured while loading the configuration!"),
 
-	SETTING_SKIN_FAILED ("Unable to set desired skin!"),
-	SETTING_ICON_FAILED ("Unable to set icon from configured URL!"),
+	// Initializing the window.
 
-	MOD_LOADING_FAILED ("An error occured while loading the mods!"),
+	SKIN_SETTING_FAILED          ("Unable to set desired skin!"),
+	WINDOW_INITIALIZATION_FAILED ("An error occured while initializing the window!"),
+	ICON_SETTING_FAILED          ("Unable to set icon from configured URL!"),
 
-	UPDATE_CHECK_FAILED ("Unable to check for updates!"),
+	// Loading files.
 
-	WEBSITE_FAILED ("Unable to open the website link!"),
+	FILE_LOADING_FAILED    ("An error occured while loading the files!"),
+	MOD_LOADING_FAILED     ("An error occured while loading the mods!"),
+	MODPACK_LOADING_FAILED ("An error occured while loading the modpacks!"),
 
-	MODPACK_FAILED ("Unable to open the modpack's data!"),
+	// Initializing the components.
 
-	PACK_FAILED ("An error occured while downloading the texture-pack!");
+	COMPONENT_INITIALIZATION_FAILED ("An error occured while initializing the components!"),
+
+	// Checking for updates.
+
+	UPDATE_CHECKING_FAILED ("An error occured while checking for updates!"),
+
+	// Website link.
+
+	WEBSITE_OPENING_FAILED ("An error occured while loading the website link!"),
+
+	// Modpack selection.
+
+	MODPACK_SELECTION_FAILED ("An error occured while loading the modpack!"),
+
+	// Pack downloading.
+
+	PACK_DOWNLOADING_FAILED ("An error occured while downloading the texture-pack!");
 
 	private String message;
 

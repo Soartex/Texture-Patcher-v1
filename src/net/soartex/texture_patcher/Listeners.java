@@ -25,6 +25,7 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -116,7 +117,7 @@ final class Listeners {
 
 				// Happens if unable to open the URL.
 
-				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(t_p, ErrorType.WEBSITE_FAILED, e1);
+				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(t_p, ErrorType.WEBSITE_OPENING_FAILED, e1);
 
 				t_p.logger.log(Level.WARNING, t_p_e.getMessage());
 
@@ -206,7 +207,7 @@ final class Listeners {
 
 							// Happens if unable to load modpack file.
 
-							final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(t_p, ErrorType.MODPACK_FAILED, e1);
+							final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(t_p, ErrorType.MODPACK_SELECTION_FAILED, e1);
 
 							t_p.logger.log(Level.WARNING, t_p_e.getMessage());
 
@@ -472,7 +473,7 @@ final class Listeners {
 
 				// Happens if an error occurs while downloading the texture-pack.
 
-				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(t_p, ErrorType.PACK_FAILED, e);
+				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(t_p, ErrorType.PACK_DOWNLOADING_FAILED, e);
 
 				t_p.logger.log(Level.SEVERE, t_p_e.getMessage());
 
@@ -515,11 +516,15 @@ final class Listeners {
 
 		protected CheckUpdateListener (final Texture_Patcher t_p) {
 
+			// Receive the texture patcher instance for the listener.
+
 			this.t_p = t_p;
 
 		}
 
 		@Override public void actionPerformed (final ActionEvent e) {
+
+			// Start the update checking process.
 
 			new Thread(this).start();
 
@@ -527,19 +532,37 @@ final class Listeners {
 
 		@Override public void run () {
 
-			time = System.currentTimeMillis();
+			try {
 
-			TEMP_C = new File(getTMP() + File.separator + ".Texture_Patcher_Temp_C_" + time);
+				// Create the temporary folder.
 
-			extractTexturepack();
+				time = System.currentTimeMillis();
 
-			checkUpdate();
+				TEMP_C = new File(getTMP() + File.separator + ".Texture_Patcher_Temp_C_" + time);
 
-			delete(TEMP_C);
+				// Extract the texture-pack.
+
+				extractTexturepack();
+
+				// Checks the modslist.csv file for updates.
+
+				checkUpdate();
+
+				// Deletes the temporary folder.
+
+				delete(TEMP_C);
+
+			} catch (final Throwable t) {
+
+				// Happens if an error occurs while checking for updates.
+
+			}
 
 		}
 
-		protected void extractTexturepack () {
+		protected void extractTexturepack () throws IOException {
+
+			// Make sure the temporary folder is ready.
 
 			delete(TEMP_C);
 
@@ -548,131 +571,109 @@ final class Listeners {
 
 			TEMP_C.mkdirs();
 
-			try {
+			// Extract the texture-pack.
 
-				final ZipInputStream zipin = new ZipInputStream(new FileInputStream(new File(t_p.path.getText())));
+			final ZipInputStream zipin = new ZipInputStream(new FileInputStream(new File(t_p.path.getText())));
 
-				ZipEntry zipEntry;
+			ZipEntry zipEntry;
 
-				final byte[] buffer = new byte[1024 * 1024];
+			final byte[] buffer = new byte[1024 * 1024];
 
-				while ((zipEntry = zipin.getNextEntry()) != null) {
+			while ((zipEntry = zipin.getNextEntry()) != null) {
 
-					final String fileName = zipEntry.getName();
-					final File destinationFile = new File(TEMP_C.getAbsolutePath() + File.separator + fileName);
+				final String fileName = zipEntry.getName();
+				final File destinationFile = new File(TEMP_C.getAbsolutePath() + File.separator + fileName);
 
-					if (!destinationFile.getName().equals("modslist.csv")) continue;
+				if (!destinationFile.getName().equals("modslist.csv")) continue;
 
-					if (zipEntry.isDirectory()) {
+				if (zipEntry.isDirectory()) {
 
-						new File(destinationFile.getParent()).mkdirs();
+					new File(destinationFile.getParent()).mkdirs();
 
-					} else {
+				} else {
 
-						try {
+					t_p.logger.log(Level.INFO, "Extracting: " + destinationFile.getAbsolutePath());
 
-							t_p.logger.log(Level.INFO, "Extracting: " + destinationFile.getAbsolutePath());
+					new File(destinationFile.getParent()).mkdirs();
 
-							new File(destinationFile.getParent()).mkdirs();
+					final FileOutputStream out = new FileOutputStream(destinationFile);
 
-							final FileOutputStream out = new FileOutputStream(destinationFile);
+					int length;
 
-							int length;
+					while ((length = zipin.read(buffer, 0, buffer.length)) > -1) {
 
-							while ((length = zipin.read(buffer, 0, buffer.length)) > -1) {
-
-								out.write(buffer, 0, length);
-
-							}
-
-							out.close();
-
-						} catch (final Exception e) {
-
-							e.printStackTrace();
-
-						}
+						out.write(buffer, 0, length);
 
 					}
+
+					out.close();
+
 				}
-
-				zipin.close();
-
-			} catch (final IOException e) {
-
-				e.printStackTrace();
-
 			}
+
+			zipin.close();
 
 		}
 
-		protected void checkUpdate () {
+		protected void checkUpdate () throws IOException, ParseException {
 
 			final File modslist = new File(TEMP_C, "modslist.csv");
 
 			if (modslist.exists()) {
 
-				try {
+				final ArrayList<String> updates = new ArrayList<String>();
 
-					final ArrayList<String> updates = new ArrayList<String>();
+				final BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(modslist)));
 
-					final BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(modslist)));
+				String readline;
 
-					String readline;
+				while ((readline = in.readLine()) != null) {
 
-					while ((readline = in.readLine()) != null) {
+					for (final Object[] row : t_p.tableData) {
 
-						for (final Object[] row : t_p.tableData) {
+						if (readline.split(",")[0].equals(row[1])) {
 
-							if (readline.split(",")[0].equals(row[1])) {
+							long olddate = Long.MAX_VALUE;
 
-								long olddate = Long.MAX_VALUE;
+							try {
 
-								try {
+								olddate = Long.parseLong(readline.split(",")[1]);
 
-									olddate = Long.parseLong(readline.split(",")[1]);
+							} catch (final Exception e) {
 
-								} catch (final Exception e) {
-
-									olddate = new SimpleDateFormat("MM/dd/yyyy").parse(readline.split(",")[1]).getTime();
-
-								}
-
-								final long newdate = ((Date) row[5]).getTime();
-
-								if (olddate < newdate) updates.add((String) row[1]);
+								olddate = new SimpleDateFormat("MM/dd/yyyy").parse(readline.split(",")[1]).getTime();
 
 							}
 
-						}
+							final long newdate = ((Date) row[5]).getTime();
 
-					}
-
-					in.close();
-
-					if (updates.isEmpty()) JOptionPane.showMessageDialog(t_p.frame, "No updates are avaible for the mods you have already patched!", "No updates!", JOptionPane.INFORMATION_MESSAGE);
-
-					else {
-
-						final int option = JOptionPane.showConfirmDialog(t_p.frame, "Updates are available!" + "\r\n" + "Do you want to have them selected on the table?", "Updates!", JOptionPane.YES_NO_OPTION);
-
-						if (option == JOptionPane.YES_OPTION) {
-
-							selectUpdated(updates);
+							if (olddate < newdate) updates.add((String) row[1]);
 
 						}
 
 					}
 
-				} catch (final Exception e) {
+				}
 
-					e.printStackTrace();
+				in.close();
+
+				if (updates.isEmpty()) JOptionPane.showMessageDialog(t_p.frame, "No updates are avaible for the mods you have already patched!", "No updates!", JOptionPane.INFORMATION_MESSAGE);
+
+				else {
+
+					final int option = JOptionPane.showConfirmDialog(t_p.frame, "Updates are available!" + "\r\n" + "Do you want to have them selected on the table?", "Updates!", JOptionPane.YES_NO_OPTION);
+
+					if (option == JOptionPane.YES_OPTION) {
+
+						selectUpdated(updates);
+
+					}
 
 				}
 
 			} else {
 
-				JOptionPane.showMessageDialog(t_p.frame, "This texture-pack has never been patched before!", "Warning!", JOptionPane.WARNING_MESSAGE);
+				JOptionPane.showMessageDialog(t_p.frame, "This texture-pack has never been patched before!", "Never patched!", JOptionPane.INFORMATION_MESSAGE);
 
 			}
 

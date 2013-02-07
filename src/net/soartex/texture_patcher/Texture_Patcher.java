@@ -8,11 +8,9 @@ import java.awt.Toolkit;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 
@@ -43,7 +41,6 @@ import javax.swing.WindowConstants;
 
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 /**
  * Texture_Patcher main class.
@@ -60,7 +57,7 @@ public final class Texture_Patcher implements Runnable {
 	protected static boolean debug = false;
 
 	protected final Preferences prefsnode = Preferences.userNodeForPackage(getClass());
-	protected final Logger logger = Logger.getLogger(getClass().getName());
+	protected final Logger logger = Logger.getLogger(getClass().getName() + "." + System.currentTimeMillis());
 
 	protected JSONObject config;
 	protected JSONObject options;
@@ -120,13 +117,9 @@ public final class Texture_Patcher implements Runnable {
 
 			initializeWindow();
 
-			// Load the mods.
+			// Load the files.
 
-			loadMods();
-
-			// Load the modpacks.
-
-			loadModpacks();
+			loadFiles();
 
 			// Initialize the components.
 
@@ -143,6 +136,10 @@ public final class Texture_Patcher implements Runnable {
 		} catch (final Texture_Patcher_Exception e) {
 
 			// Happens in the event of a caught but fatal error.
+
+			logger.log(Level.SEVERE, e.getMessage());
+
+			e.printStackTrace();
 
 			if (e.getType() != ErrorType.WINDOW_CLOSED) e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
 
@@ -176,8 +173,8 @@ public final class Texture_Patcher implements Runnable {
 
 		logger.setLevel(Level.INFO);
 
-		final LoggingHandler handler = new LoggingHandler();
-		handler.setFormatter(new LoggingFormatter());
+		final Logging.LoggingHandler handler = new Logging.LoggingHandler();
+		handler.setFormatter(new Logging.LoggingFormatter());
 
 		logger.addHandler(handler);
 		logger.setUseParentHandlers(false);
@@ -199,11 +196,7 @@ public final class Texture_Patcher implements Runnable {
 
 			else if (!debug) {
 
-				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_MISSING, null);
-
-				logger.log(Level.SEVERE, t_p_e.getMessage());
-
-				throw t_p_e;
+				throw new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_MISSING, null);
 
 			}
 
@@ -215,11 +208,7 @@ public final class Texture_Patcher implements Runnable {
 
 			if (readLine.startsWith("#")) {
 
-				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_DEFAULT, null);
-
-				logger.log(Level.SEVERE, t_p_e.getMessage());
-
-				throw t_p_e;
+				throw new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_DEFAULT, null);
 
 			}
 
@@ -235,57 +224,13 @@ public final class Texture_Patcher implements Runnable {
 
 			if (options.get("zipsurl") == null) {
 
-				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.CONFIG_INCOMPLETE, null);
-
-				logger.log(Level.SEVERE, t_p_e.getMessage());
-
-				throw t_p_e;
+				throw new Texture_Patcher_Exception(this, ErrorType.CONFIG_INCOMPLETE, null);
 
 			}
 
 			if (options.get("name") == null) options.put("name", "Texture Patcher");
 
 			// Determine errors.
-
-		} catch (final FileNotFoundException e) {
-
-			// Happens if the file cannot be found on the server.
-
-			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.CONFIG_INCOMPLETE, null);
-
-			logger.log(Level.SEVERE, t_p_e.getMessage());
-
-			throw t_p_e;
-
-		} catch (final MalformedURLException e) {
-
-			// Happens if the URL in the externalconfig.txt is malformed.
-
-			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_BAD, null);
-
-			logger.log(Level.SEVERE, t_p_e.getMessage());
-
-			throw t_p_e;
-
-		} catch (final IOException e) {
-
-			// Happens if the URL's host cannot be resolved.
-
-			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.CANNOT_FIND_SERVER, null);
-
-			logger.log(Level.SEVERE, t_p_e.getMessage());
-
-			throw t_p_e;
-
-		} catch (final ParseException e) {
-
-			// Happens if the config file cannot be parsed as JSON.
-
-			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.CONFIG_BAD, null);
-
-			logger.log(Level.SEVERE, t_p_e.getMessage());
-
-			throw t_p_e;
 
 		} catch (final Texture_Patcher_Exception e) {
 
@@ -297,17 +242,13 @@ public final class Texture_Patcher implements Runnable {
 
 			// Happens for all other errors.
 
-			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.CONFIG_LOADING_FAILED, null);
-
-			logger.log(Level.SEVERE, t_p_e.getMessage());
-
-			throw t_p_e;
+			throw new Texture_Patcher_Exception(this, ErrorType.CONFIG_LOADING_FAILED, null);
 
 		}
 
 	}
 
-	protected void initializeWindow () {
+	protected void initializeWindow () throws Texture_Patcher_Exception {
 
 		// Set the skin from the configuration.
 
@@ -341,7 +282,7 @@ public final class Texture_Patcher implements Runnable {
 
 			// Happens if the skin cannot be found, or if an error occurs while setting it.
 
-			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.SETTING_SKIN_FAILED, e);
+			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.SKIN_SETTING_FAILED, e);
 
 			logger.log(Level.WARNING, t_p_e.getMessage());
 
@@ -349,18 +290,28 @@ public final class Texture_Patcher implements Runnable {
 
 		}
 
-		// Configure the frame.
+		try {
 
-		frame = new JFrame((String) options.get("name") + (options.get("name").equals("Texture Patcher") ? " v." : " Patcher v."  ) + VERSION);
-		frame.setLayout(new GridBagLayout());
+			// Configure the frame.
 
-		frame.setLocation(prefsnode.getInt("x", 50), prefsnode.getInt("y", 50));
-		frame.setSize(prefsnode.getInt("width", 500), prefsnode.getInt("height", 600));
+			frame = new JFrame((String) options.get("name") + (options.get("name").equals("Texture Patcher") ? " v." : " Patcher v."  ) + VERSION);
+			frame.setLayout(new GridBagLayout());
 
-		frame.setExtendedState(prefsnode.getInt("max", Frame.NORMAL));
+			frame.setLocation(prefsnode.getInt("x", 50), prefsnode.getInt("y", 50));
+			frame.setSize(prefsnode.getInt("width", 500), prefsnode.getInt("height", 600));
 
-		frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-		frame.addWindowListener(new Listeners.ExitListener(this));
+			frame.setExtendedState(prefsnode.getInt("max", Frame.NORMAL));
+
+			frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+			frame.addWindowListener(new Listeners.ExitListener(this));
+
+		} catch (final Exception e) {
+
+			// Happens if an error occurs while initializing the window.
+
+			throw new Texture_Patcher_Exception(this, ErrorType.WINDOW_INITIALIZATION_FAILED, e);
+
+		}
 
 		// Load the frame icon.
 
@@ -374,7 +325,7 @@ public final class Texture_Patcher implements Runnable {
 
 			// Happens if IO error occurs while setting the icon.
 
-			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.SETTING_ICON_FAILED, e);
+			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.ICON_SETTING_FAILED, e);
 
 			logger.log(Level.WARNING, t_p_e.getMessage());
 
@@ -384,115 +335,139 @@ public final class Texture_Patcher implements Runnable {
 
 	}
 
-	protected void loadMods () throws Texture_Patcher_Exception {
+	protected void loadFiles () throws Texture_Patcher_Exception {
 
-		// Initialize the loading dialog.
+		try {
 
-		loadingFrame = new JFrame("Loading files...");
-		loadingFrame.setLayout(new GridBagLayout());
+			// Initialize the loading dialog.
 
-		final Insets insets = new Insets(2, 2, 1, 2);
+			loadingFrame = new JFrame("Loading files...");
+			loadingFrame.setLayout(new GridBagLayout());
 
-		GridBagConstraints gbc = new GridBagConstraints();
+			final Insets insets = new Insets(2, 2, 1, 2);
 
-		gbc.gridx = 0;
-		gbc.gridy = 0;
-		gbc.gridwidth = 1;
-		gbc.weightx = 1;
-		gbc.weighty = 1;
-		gbc.fill = GridBagConstraints.HORIZONTAL;
-		gbc.anchor = GridBagConstraints.NORTH;
-		gbc.insets = insets;
+			GridBagConstraints gbc = new GridBagConstraints();
 
-		// Initialize the progress bar.
+			gbc.gridx = 0;
+			gbc.gridy = 0;
+			gbc.gridwidth = 1;
+			gbc.weightx = 1;
+			gbc.weighty = 1;
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.anchor = GridBagConstraints.NORTH;
+			gbc.insets = insets;
 
-		final JProgressBar progress = new JProgressBar(SwingConstants.HORIZONTAL);
+			// Initialize the progress bar.
 
-		progress.setIndeterminate(true);
-		loadingFrame.add(progress, gbc);
+			final JProgressBar progress = new JProgressBar(SwingConstants.HORIZONTAL);
 
-		gbc = new GridBagConstraints();
+			progress.setIndeterminate(true);
+			loadingFrame.add(progress, gbc);
 
-		gbc.gridx = 0;
-		gbc.gridy = 1;
-		gbc.gridwidth = 1;
-		gbc.weightx = 1;
-		gbc.weighty = 1;
-		gbc.fill = GridBagConstraints.HORIZONTAL;
-		gbc.anchor = GridBagConstraints.NORTH;
-		gbc.insets = insets;
+			gbc = new GridBagConstraints();
 
-		// Initialize the static message label.
+			gbc.gridx = 0;
+			gbc.gridy = 1;
+			gbc.gridwidth = 1;
+			gbc.weightx = 1;
+			gbc.weighty = 1;
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.anchor = GridBagConstraints.NORTH;
+			gbc.insets = insets;
 
-		final JLabel message = new JLabel("Please wait patiently while we load your files...", SwingConstants.CENTER);
-		loadingFrame.add(message, gbc);
+			// Initialize the static message label.
 
-		gbc = new GridBagConstraints();
+			final JLabel label = new JLabel("Please wait patiently while we load your files...", SwingConstants.CENTER);
+			loadingFrame.add(label, gbc);
 
-		gbc.gridx = 0;
-		gbc.gridy = 2;
-		gbc.gridwidth = 1;
-		gbc.weightx = 1;
-		gbc.weighty = 1;
-		gbc.fill = GridBagConstraints.HORIZONTAL;
-		gbc.anchor = GridBagConstraints.NORTH;
-		gbc.insets = insets;
+			gbc = new GridBagConstraints();
 
-		// Initialize the loading mod number label.
+			gbc.gridx = 0;
+			gbc.gridy = 2;
+			gbc.gridwidth = 1;
+			gbc.weightx = 1;
+			gbc.weighty = 1;
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.anchor = GridBagConstraints.NORTH;
+			gbc.insets = insets;
 
-		final JLabel modMessage = new JLabel("Loading mod # 0", SwingConstants.CENTER);
-		loadingFrame.add(modMessage, gbc);
+			// Initialize the loading mod number label.
 
-		gbc = new GridBagConstraints();
+			final JLabel message = new JLabel("--", SwingConstants.CENTER);
+			loadingFrame.add(message, gbc);
 
-		gbc.gridx = 0;
-		gbc.gridy = 3;
-		gbc.gridwidth = 1;
-		gbc.weightx = 1;
-		gbc.weighty = 1;
-		gbc.fill = GridBagConstraints.HORIZONTAL;
-		gbc.anchor = GridBagConstraints.NORTH;
-		gbc.insets = insets;
+			gbc = new GridBagConstraints();
 
-		// Initialize the the loading mod name label.
+			gbc.gridx = 0;
+			gbc.gridy = 3;
+			gbc.gridwidth = 1;
+			gbc.weightx = 1;
+			gbc.weighty = 1;
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.anchor = GridBagConstraints.NORTH;
+			gbc.insets = insets;
 
-		final JLabel modName = new JLabel("--", SwingConstants.CENTER);
-		loadingFrame.add(modName,gbc);
+			// Initialize the the loading mod name label.
 
-		loadingFrame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-		loadingFrame.addWindowListener(new Listeners.ExitListener(this));
+			final JLabel name = new JLabel("--", SwingConstants.CENTER);
+			loadingFrame.add(name,gbc);
 
-		loadingFrame.setIconImage(frame.getIconImage());
+			loadingFrame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+			loadingFrame.addWindowListener(new Listeners.ExitListener(this));
 
-		loadingFrame.pack();
-		loadingFrame.setResizable(false);
+			loadingFrame.setIconImage(frame.getIconImage());
 
-		loadingFrame.setLocation(150, 150);
-		loadingFrame.setVisible(true);
+			loadingFrame.pack();
+			loadingFrame.setResizable(false);
 
-		// Load the mods from the config file.
+			loadingFrame.setLocation(150, 150);
+			loadingFrame.setVisible(true);
 
-		tableData = loadTable(modMessage, modName);
+			// Load the mods from the config file.
 
-		// Happens in the window is closed.
+			tableData = loadMods(message, name);
 
-		if (!loadingFrame.isVisible()) throw new Texture_Patcher_Exception(this, ErrorType.WINDOW_CLOSED, null);
+			// Happens in the window is closed.
 
-		// Return to the frame.
+			if (!loadingFrame.isVisible()) throw new Texture_Patcher_Exception(this, ErrorType.WINDOW_CLOSED, null);
 
-		loadingFrame.dispose();
+			// Load the modpacks from the config file.
 
-		frame.requestFocus();
+			loadModpacks(message, name);
+
+			// Happens in the window is closed.
+
+			if (!loadingFrame.isVisible()) throw new Texture_Patcher_Exception(this, ErrorType.WINDOW_CLOSED, null);
+
+			// Return to the frame.
+
+			loadingFrame.dispose();
+
+			frame.requestFocus();
+
+		} catch (final Texture_Patcher_Exception e) {
+
+			// Happens for TPE's thrown during mod loading or modpack loading.
+
+			throw e;
+
+		} catch (final Exception e) {
+
+			// Happens if an error occurs while loading the mods.
+
+			throw new Texture_Patcher_Exception(this, ErrorType.FILE_LOADING_FAILED, e);
+
+		}
 
 	}
 
-	protected Object[][] loadTable (final JLabel modMessage, final JLabel modTitle) throws Texture_Patcher_Exception {
-
-		// Stores each row as an array of the column values.
-
-		final ArrayList<Object[]> rows = new ArrayList<Object[]>();
+	protected Object[][] loadMods (final JLabel message, final JLabel title) throws Texture_Patcher_Exception {
 
 		try {
+
+			// Stores each row as an array of the column values.
+
+			final ArrayList<Object[]> rows = new ArrayList<Object[]>();
 
 			int count = 0;
 
@@ -501,7 +476,7 @@ public final class Texture_Patcher implements Runnable {
 			@SuppressWarnings("unchecked")
 			final TreeMap<Object, Object> tmods = new TreeMap<Object, Object>(mods);
 
-			for (final Object omod : tmods.keySet()) {
+			for (final Object mod : tmods.keySet()) {
 
 				// If the window was closed.
 
@@ -511,13 +486,11 @@ public final class Texture_Patcher implements Runnable {
 
 				}
 
-				final String mod = (String) omod;
-
 				if (mod.equals("")) continue;
 
 				// URL of the mod zip.
 
-				final URL zipurl = new URL((String) options.get("zipsurl") + mod.replace(" ", "_") + ".zip");
+				final URL zipurl = new URL((String) options.get("zipsurl") + ((String) mod).replace(" ", "_") + ".zip");
 
 				try {
 
@@ -567,26 +540,38 @@ public final class Texture_Patcher implements Runnable {
 
 					row[5] = new Date(connection.getLastModified());
 
-					rows.add(row);
-
-					modMessage.setText("Loading mod # " + count++);
-					modTitle.setText((String) row[1]);
+					message.setText("Loading mod # " + ++count);
+					title.setText((String) row[1]);
 
 					logger.log(Level.INFO, "Loading mod: " + mod + ".");
 
-				} catch (final IOException e) {
+					rows.add(row);
+
+				} catch (final Exception e) {
 
 					// Happens if any error occurs while loading the mod.
 
-					e.printStackTrace();
-
 					logger.log(Level.WARNING, "Unable to load mod " + mod + ".");
+
+					e.printStackTrace();
 
 					continue;
 
 				}
 
 			}
+
+			// Collect the rows into an two dimensional array.
+
+			final Object[][] temp = new Object[rows.size()][];
+
+			for (int i = 0; i < rows.size(); i++){
+
+				temp[i]= rows.get(i);
+
+			}
+
+			return temp;
 
 		} catch (final Exception e) {
 
@@ -596,247 +581,267 @@ public final class Texture_Patcher implements Runnable {
 
 		}
 
-		// Collect the rows into an two dimensional array.
-
-		final Object[][] temp = new Object[rows.size()][];
-
-		for (int i = 0; i < rows.size(); i++){
-
-			temp[i]= rows.get(i);
-
-		}
-
-		return temp;
 	}
 
-	protected void loadModpacks () {
+	protected void loadModpacks (final JLabel message, final JLabel title) throws Texture_Patcher_Exception {
 
-		// Iterate through the JSON modpack object.
+		try {
 
-		for (final Object omodpack : modpacks.keySet()) {
+			// Iterate through the JSON modpack object.
 
-			final String modpack = (String) omodpack;
+			int count = 0;
 
-			try {
+			for (final Object modpack : modpacks.keySet()) {
 
-				// Load the modpack and make sure that the modpack file exists.
+				// If the window was closed.
 
-				final URL modpackURL = new URL((String) modpacks.get(modpack));
+				if (loadingFrame.isVisible() != true) {
 
-				modpackURL.openStream();
+					break;
 
-				logger.log(Level.INFO, "Loading modpack: " + modpack + ".");
+				}
 
-			} catch (final Exception e) {
+				try {
 
-				// Happens if any error occurs while loading the modpack.
+					// Load the modpack and make sure that the modpack file exists.
 
-				e.printStackTrace();
+					final URL modpackURL = new URL((String) modpacks.get(modpack));
 
-				logger.log(Level.WARNING, "Unable to load modpack " + modpack + ".");
+					modpackURL.openStream();
 
-				continue;
+					message.setText("Loading modpack # " + ++count);
+					title.setText((String) modpack);
+
+					logger.log(Level.INFO, "Loading modpack: " + modpack + ".");
+
+				} catch (final Exception e) {
+
+					// Happens if any error occurs while loading the modpack.
+
+					e.printStackTrace();
+
+					logger.log(Level.WARNING, "Unable to load modpack " + modpack + ".");
+
+					continue;
+
+				}
 
 			}
 
+		} catch (final Exception e) {
+
+			// Happens if an error occurs while loading the modpacks.
+
+			throw new Texture_Patcher_Exception(this, ErrorType.MODPACK_LOADING_FAILED, e);
+
 		}
 
 	}
 
-	protected void initializeComponents () {
+	protected void initializeComponents () throws Texture_Patcher_Exception {
 
-		// Initialize the path text field.
+		try {
 
-		final Insets insets = new Insets(1, 3, 1, 3);
+			// Initialize the path text field.
 
-		GridBagConstraints gbc = new GridBagConstraints();
+			final Insets insets = new Insets(1, 3, 1, 3);
 
-		gbc.gridx = 0;
-		gbc.gridy = 0;
-		gbc.gridwidth = 4;
-		gbc.weightx = 4;
-		gbc.weighty = 0;
-		gbc.fill = GridBagConstraints.HORIZONTAL;
-		gbc.anchor = GridBagConstraints.NORTH;
-		gbc.insets = insets;
+			GridBagConstraints gbc = new GridBagConstraints();
 
-		path = new JTextField(prefsnode.get("path", ""));
+			gbc.gridx = 0;
+			gbc.gridy = 0;
+			gbc.gridwidth = 4;
+			gbc.weightx = 4;
+			gbc.weighty = 0;
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.anchor = GridBagConstraints.NORTH;
+			gbc.insets = insets;
 
-		path.setEditable(false);
+			path = new JTextField(prefsnode.get("path", ""));
 
-		frame.add(path, gbc);
+			path.setEditable(false);
 
-		// Initialize the browse button.
+			frame.add(path, gbc);
 
-		gbc = new GridBagConstraints();
+			// Initialize the browse button.
 
-		gbc.gridx = 0;
-		gbc.gridy = 1;
-		gbc.gridwidth = 1;
-		gbc.weightx = 1;
-		gbc.weighty = 0;
-		gbc.fill = GridBagConstraints.HORIZONTAL;
-		gbc.anchor = GridBagConstraints.NORTH;
-		gbc.insets = insets;
+			gbc = new GridBagConstraints();
 
-		final JButton browse = new JButton("Browse");
-		browse.addActionListener(new Listeners.BrowseListener(this));
+			gbc.gridx = 0;
+			gbc.gridy = 1;
+			gbc.gridwidth = 1;
+			gbc.weightx = 1;
+			gbc.weighty = 0;
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.anchor = GridBagConstraints.NORTH;
+			gbc.insets = insets;
 
-		frame.add(browse, gbc);
+			final JButton browse = new JButton("Browse");
+			browse.addActionListener(new Listeners.BrowseListener(this));
 
-		// Initialize the download pack button.
+			frame.add(browse, gbc);
 
-		gbc = new GridBagConstraints();
+			// Initialize the download pack button.
 
-		gbc.gridx = 1;
-		gbc.gridy = 1;
-		gbc.gridwidth = 1;
-		gbc.weightx = 1;
-		gbc.weighty = 0;
-		gbc.fill = GridBagConstraints.HORIZONTAL;
-		gbc.anchor = GridBagConstraints.NORTH;
-		gbc.insets = insets;
+			gbc = new GridBagConstraints();
 
-		final JButton downloadPack = new JButton("Download Pack");
-		downloadPack.addActionListener(new Listeners.DownloadPackListener(this));
+			gbc.gridx = 1;
+			gbc.gridy = 1;
+			gbc.gridwidth = 1;
+			gbc.weightx = 1;
+			gbc.weighty = 0;
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.anchor = GridBagConstraints.NORTH;
+			gbc.insets = insets;
 
-		frame.add(downloadPack, gbc);
+			final JButton downloadPack = new JButton("Download Pack");
+			downloadPack.addActionListener(new Listeners.DownloadPackListener(this));
 
-		// Initialize the check for updates button.
+			frame.add(downloadPack, gbc);
 
-		gbc = new GridBagConstraints();
+			// Initialize the check for updates button.
 
-		gbc.gridx = 2;
-		gbc.gridy = 1;
-		gbc.gridwidth = 1;
-		gbc.weightx = 1;
-		gbc.weighty = 0;
-		gbc.fill = GridBagConstraints.HORIZONTAL;
-		gbc.anchor = GridBagConstraints.NORTH;
-		gbc.insets = insets;
+			gbc = new GridBagConstraints();
 
-		checkUpdate = new JButton("Check For Updates");
-		checkUpdate.addActionListener(new Listeners.CheckUpdateListener(this));
-		checkUpdate.setEnabled(false);
+			gbc.gridx = 2;
+			gbc.gridy = 1;
+			gbc.gridwidth = 1;
+			gbc.weightx = 1;
+			gbc.weighty = 0;
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.anchor = GridBagConstraints.NORTH;
+			gbc.insets = insets;
 
-		frame.add(checkUpdate, gbc);
+			checkUpdate = new JButton("Check For Updates");
+			checkUpdate.addActionListener(new Listeners.CheckUpdateListener(this));
+			checkUpdate.setEnabled(false);
 
-		// Initialize the patch button.
+			frame.add(checkUpdate, gbc);
 
-		gbc = new GridBagConstraints();
+			// Initialize the patch button.
 
-		gbc.gridx = 3;
-		gbc.gridy = 1;
-		gbc.gridwidth = 1;
-		gbc.weightx = 1;
-		gbc.weighty = 0;
-		gbc.fill = GridBagConstraints.HORIZONTAL;
-		gbc.anchor = GridBagConstraints.NORTH;
-		gbc.insets = insets;
+			gbc = new GridBagConstraints();
 
-		patch = new JButton("Patch");
-		patch.addActionListener(new Listeners.PatchListener(this));
-		patch.setEnabled(false);
+			gbc.gridx = 3;
+			gbc.gridy = 1;
+			gbc.gridwidth = 1;
+			gbc.weightx = 1;
+			gbc.weighty = 0;
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.anchor = GridBagConstraints.NORTH;
+			gbc.insets = insets;
 
-		frame.add(patch, gbc);
+			patch = new JButton("Patch");
+			patch.addActionListener(new Listeners.PatchListener(this));
+			patch.setEnabled(false);
 
-		// Resolve the preferences stored path and make sure it exists.
+			frame.add(patch, gbc);
 
-		if (!path.getText().equals("") && new File(path.getText()).exists()) {
+			// Resolve the preferences stored path and make sure it exists.
 
-			checkUpdate.setEnabled(true);
-			patch.setEnabled(true);
+			if (!path.getText().equals("") && new File(path.getText()).exists()) {
 
-		} else {
+				checkUpdate.setEnabled(true);
+				patch.setEnabled(true);
 
-			prefsnode.remove("path");
+			} else {
 
-			path.setText("");
+				prefsnode.remove("path");
 
-		}
-
-		// Initialize the table.
-
-		gbc = new GridBagConstraints();
-
-		gbc.gridx = 0;
-		gbc.gridy = 2;
-		gbc.gridwidth = 4;
-		gbc.weightx = 4;
-		gbc.weighty = 1;
-		gbc.fill = GridBagConstraints.BOTH;
-		gbc.anchor = GridBagConstraints.NORTH;
-		gbc.insets = insets;
-
-		table = new JTable(new TableModel(tableData));
-		table.setFillsViewportHeight(true);
-		table.setAutoCreateRowSorter(true);
-		table.getTableHeader().setReorderingAllowed(false);
-		table.getColumnModel().getColumn(0).setMaxWidth(25);
-		table.addMouseListener(new Listeners.TableListener(this));
-
-		frame.add(new JScrollPane(table), gbc);
-
-		// Initialize the menu.
-
-		final JMenuBar menubar = new JMenuBar();
-
-		final JMenu menu = new JMenu("File");
-
-		if ((String) options.get("url") != null) {
-
-			final JMenuItem website = new JMenuItem((String) options.get("name") + " Website");
-			website.addActionListener(new Listeners.WebsiteListener(this));
-			menu.add(website);
-
-		}
-
-		menu.addSeparator();
-
-		final ButtonGroup group = new ButtonGroup();
-
-		// Load the modpack menu items.
-
-		JRadioButtonMenuItem modpacksitems;
-
-		if (modpacks != null) {
-
-			@SuppressWarnings("unchecked")
-			final TreeMap<Object, Object> tmodpacks = new TreeMap<Object, Object>(modpacks);
-
-			for (final Object modpack : tmodpacks.keySet()) {
-
-				modpacksitems = new JRadioButtonMenuItem((String) modpack);
-				modpacksitems.setSelected(false);
-				modpacksitems.addActionListener(new Listeners.ModpackListener(this));
-				group.add(modpacksitems);
-				menu.add(modpacksitems);
+				path.setText("");
 
 			}
 
-			if (!modpacks.isEmpty()) menu.addSeparator();
+			// Initialize the table.
+
+			gbc = new GridBagConstraints();
+
+			gbc.gridx = 0;
+			gbc.gridy = 2;
+			gbc.gridwidth = 4;
+			gbc.weightx = 4;
+			gbc.weighty = 1;
+			gbc.fill = GridBagConstraints.BOTH;
+			gbc.anchor = GridBagConstraints.NORTH;
+			gbc.insets = insets;
+
+			table = new JTable(new TableModel(tableData));
+			table.setFillsViewportHeight(true);
+			table.setAutoCreateRowSorter(true);
+			table.getTableHeader().setReorderingAllowed(false);
+			table.getColumnModel().getColumn(0).setMaxWidth(25);
+			table.addMouseListener(new Listeners.TableListener(this));
+
+			frame.add(new JScrollPane(table), gbc);
+
+			// Initialize the menu.
+
+			final JMenuBar menubar = new JMenuBar();
+
+			final JMenu menu = new JMenu("File");
+
+			if ((String) options.get("url") != null) {
+
+				final JMenuItem website = new JMenuItem((String) options.get("name") + " Website");
+				website.addActionListener(new Listeners.WebsiteListener(this));
+				menu.add(website);
+
+			}
+
+			menu.addSeparator();
+
+			final ButtonGroup group = new ButtonGroup();
+
+			// Load the modpack menu items.
+
+			JRadioButtonMenuItem modpacksitems;
+
+			if (modpacks != null) {
+
+				@SuppressWarnings("unchecked")
+				final TreeMap<Object, Object> tmodpacks = new TreeMap<Object, Object>(modpacks);
+
+				for (final Object modpack : tmodpacks.keySet()) {
+
+					modpacksitems = new JRadioButtonMenuItem((String) modpack);
+					modpacksitems.setSelected(false);
+					modpacksitems.addActionListener(new Listeners.ModpackListener(this));
+					group.add(modpacksitems);
+					menu.add(modpacksitems);
+
+				}
+
+				if (!modpacks.isEmpty()) menu.addSeparator();
+
+			}
+
+			JRadioButtonMenuItem selectitems;
+
+			selectitems = new JRadioButtonMenuItem("Select All");
+			selectitems.setSelected(false);
+			selectitems.addActionListener(new Listeners.ModpackListener(this));
+
+			group.add(selectitems);
+			menu.add(selectitems);
+
+			selectitems = new JRadioButtonMenuItem("Select None");
+			selectitems.setSelected(true);
+			selectitems.addActionListener(new Listeners.ModpackListener(this));
+
+			group.add(selectitems);
+			menu.add(selectitems);
+
+			menubar.add(menu);
+
+			frame.setJMenuBar(menubar);
+
+		} catch (final Exception e) {
+
+			// Happens if an error occurs while initializing the components.
+
+			throw new Texture_Patcher_Exception(this, ErrorType.COMPONENT_INITIALIZATION_FAILED, e);
 
 		}
-
-		JRadioButtonMenuItem selectitems;
-
-		selectitems = new JRadioButtonMenuItem("Select All");
-		selectitems.setSelected(false);
-		selectitems.addActionListener(new Listeners.ModpackListener(this));
-
-		group.add(selectitems);
-		menu.add(selectitems);
-
-		selectitems = new JRadioButtonMenuItem("Select None");
-		selectitems.setSelected(true);
-		selectitems.addActionListener(new Listeners.ModpackListener(this));
-
-		group.add(selectitems);
-		menu.add(selectitems);
-
-		menubar.add(menu);
-
-		frame.setJMenuBar(menubar);
 
 	}
 
@@ -860,7 +865,7 @@ public final class Texture_Patcher implements Runnable {
 
 			// Happens if any error occurs while checking for updates.
 
-			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.UPDATE_CHECK_FAILED, e);
+			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.UPDATE_CHECKING_FAILED, e);
 
 			logger.log(Level.WARNING, t_p_e.getMessage());
 
