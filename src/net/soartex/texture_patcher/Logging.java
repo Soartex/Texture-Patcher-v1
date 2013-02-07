@@ -11,13 +11,27 @@ final class Logging {
 
 	protected static final class LoggingHandler extends StreamHandler {
 
+		protected final Texture_Patcher t_p;
+
+		protected LoggingHandler (final Texture_Patcher t_p) {
+
+			// Receive the texture patcher instance for the logging handler.
+
+			this.t_p = t_p;
+
+		}
+
 		@Override public void publish (final LogRecord lr) {
 
 			// Print to System.out if the level is INFO, System.err if it is not.
 
-			if (lr.getLevel() == Level.INFO) System.out.println(getFormatter().format(lr));
+			final String log = getFormatter().format(lr);
 
-			else System.err.println(getFormatter().format(lr));
+			if (lr.getLevel() == Level.INFO) System.out.println(log);
+
+			else System.err.println(log);
+
+			t_p.logs.add(log);
 
 		}
 

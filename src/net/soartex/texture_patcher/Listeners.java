@@ -1174,6 +1174,8 @@ final class Listeners {
 
 		@Override public void windowClosing (final WindowEvent e) {
 
+			// Save the window's size and location.
+
 			if (t_p.frame.isVisible()) {
 
 				t_p.prefsnode.putInt("max", t_p.frame.getExtendedState());
@@ -1187,6 +1189,18 @@ final class Listeners {
 					t_p.prefsnode.putInt("height", t_p.frame.getHeight());
 
 				}
+
+			}
+
+			// Dispose of the windows.
+
+			if (!t_p.loadingFrame.isVisible()) {
+
+				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(t_p, ErrorType.WINDOW_CLOSED, null);
+
+				t_p.logger.log(Level.SEVERE, t_p_e.getMessage());
+
+				t_p_e.printStackTrace();
 
 			}
 

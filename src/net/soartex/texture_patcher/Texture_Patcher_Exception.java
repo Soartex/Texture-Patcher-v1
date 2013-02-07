@@ -27,6 +27,20 @@ final class Texture_Patcher_Exception extends Exception {
 
 	}
 
+	@Override public void printStackTrace () {
+
+		super.printStackTrace();
+
+		final StringWriter sw = new StringWriter();
+
+		printStackTrace(new PrintWriter(sw));
+
+		sw.flush();
+
+		t_p.logs.add(sw.toString());
+
+	}
+
 	@Override public Throwable getCause () {
 
 		return cause;

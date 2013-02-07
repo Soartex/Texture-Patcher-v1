@@ -34,6 +34,10 @@ enum ErrorType {
 
 	UPDATE_CHECKING_FAILED ("An error occured while checking for updates!"),
 
+	// Creating the crash log.
+
+	CRASH_LOG_CREATING_FAILED ("An error occured while creating the crash log!"),
+
 	// Website link.
 
 	WEBSITE_OPENING_FAILED ("An error occured while loading the website link!"),

@@ -8,8 +8,10 @@ import java.awt.Toolkit;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 
 import java.net.URL;
 import java.net.URLConnection;
@@ -58,6 +60,7 @@ public final class Texture_Patcher implements Runnable {
 
 	protected final Preferences prefsnode = Preferences.userNodeForPackage(getClass());
 	protected final Logger logger = Logger.getLogger(getClass().getName() + "." + System.currentTimeMillis());
+	protected ArrayList<String> logs = new ArrayList<String>();
 
 	protected JSONObject config;
 	protected JSONObject options;
@@ -105,6 +108,18 @@ public final class Texture_Patcher implements Runnable {
 
 		try {
 
+			// Set the native look ad feel for before the skin in the config is loaded.
+
+			try {
+
+				UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+
+			} catch (final Exception e1) {
+
+				e1.printStackTrace();
+
+			}
+
 			// Initialize the logger.
 
 			initializeLogger();
@@ -146,6 +161,8 @@ public final class Texture_Patcher implements Runnable {
 			if (frame != null) frame.dispose();
 			if (loadingFrame != null) loadingFrame.dispose();
 
+			createCrashLog();
+
 		} catch (final Throwable t) {
 
 			// Happens in the event of an uncaught error.
@@ -161,6 +178,8 @@ public final class Texture_Patcher implements Runnable {
 			if (frame != null) frame.dispose();
 			if (loadingFrame != null) loadingFrame.dispose();
 
+			createCrashLog();
+
 		}
 
 	}
@@ -173,7 +192,7 @@ public final class Texture_Patcher implements Runnable {
 
 		logger.setLevel(Level.INFO);
 
-		final Logging.LoggingHandler handler = new Logging.LoggingHandler();
+		final Logging.LoggingHandler handler = new Logging.LoggingHandler(this);
 		handler.setFormatter(new Logging.LoggingFormatter());
 
 		logger.addHandler(handler);
@@ -202,7 +221,7 @@ public final class Texture_Patcher implements Runnable {
 
 			// Used for testing.
 
-			if (debug) readLine = "http://soartex.net/texture-patcher/data/config.json";
+			if (debug) readLine = "http://ksoartex.net/texture-patcher/data/config.json";
 
 			// Checks if the externalconfig.txt is the default.
 
@@ -242,7 +261,7 @@ public final class Texture_Patcher implements Runnable {
 
 			// Happens for all other errors.
 
-			throw new Texture_Patcher_Exception(this, ErrorType.CONFIG_LOADING_FAILED, null);
+			throw new Texture_Patcher_Exception(this, ErrorType.CONFIG_LOADING_FAILED, e);
 
 		}
 
@@ -323,7 +342,7 @@ public final class Texture_Patcher implements Runnable {
 
 		} catch (final Exception e) {
 
-			// Happens if IO error occurs while setting the icon.
+			// Happens if an error occurs while setting the icon.
 
 			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.ICON_SETTING_FAILED, e);
 
@@ -869,7 +888,55 @@ public final class Texture_Patcher implements Runnable {
 
 			logger.log(Level.WARNING, t_p_e.getMessage());
 
+			t_p_e.printStackTrace();
+
 			t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
+
+		}
+
+	}
+
+	protected void createCrashLog () {
+
+		try {
+
+			final String prefix = "Texture-Patcher-" + VERSION + " (";
+
+			File file;
+
+			int count = 0;
+
+			while (true) {
+
+				final String filename = prefix.concat(count++ + ").log");
+
+				file = new File(filename);
+
+				if (file.exists()) continue;
+
+				else break;
+
+			}
+
+			final PrintWriter out = new PrintWriter(new FileWriter(file));
+
+			for (final String log : logs) {
+
+				out.println(log);
+
+			}
+
+			out.close();
+
+			System.out.println("A log file can be found at " + file.getAbsolutePath() + " !");
+
+		} catch (final Exception e) {
+
+			// Happens if an error occurs while create the crash log.
+
+			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.CRASH_LOG_CREATING_FAILED, e);
+
+			t_p_e.printStackTrace();
 
 		}
 
