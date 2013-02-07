@@ -46,9 +46,23 @@ enum ErrorType {
 
 	MODPACK_SELECTION_FAILED ("An error occured while loading the modpack!"),
 
+	// Browsing.
+
+	BROWSING_FAILED ("An error occured while opening the browse dialog!"),
+
 	// Pack downloading.
 
-	PACK_DOWNLOADING_FAILED ("An error occured while downloading the texture-pack!");
+	PACK_DOWNLOADING_FAILED ("An error occured while downloading the texture-pack!"),
+
+	// Checking texture pack for updates.
+
+	PACK_UPDATE_CHECKING_FAILED ("An error occured while checking the texture pack for updates!"),
+
+	// Patching.
+
+	PATCHING_FAILED ("An error occured while patching!");
+
+	// Fields and methods.
 
 	private String message;
 

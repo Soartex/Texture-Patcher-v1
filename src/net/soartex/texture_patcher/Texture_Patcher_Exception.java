@@ -37,7 +37,7 @@ final class Texture_Patcher_Exception extends Exception {
 
 		sw.flush();
 
-		t_p.logs.add(sw.toString());
+		t_p.logs.add(sw.toString().trim());
 
 	}
 

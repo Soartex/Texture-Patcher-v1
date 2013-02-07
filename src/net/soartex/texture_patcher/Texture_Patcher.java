@@ -9,18 +9,20 @@ import java.awt.Toolkit;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 
 import java.net.URL;
 import java.net.URLConnection;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.TreeMap;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import java.util.prefs.Preferences;
 
 import javax.swing.ButtonGroup;
@@ -42,6 +44,7 @@ import javax.swing.UIManager.LookAndFeelInfo;
 import javax.swing.WindowConstants;
 
 import org.json.simple.JSONObject;
+
 import org.json.simple.parser.JSONParser;
 
 /**
@@ -154,14 +157,18 @@ public final class Texture_Patcher implements Runnable {
 
 			logger.log(Level.SEVERE, e.getMessage());
 
-			e.printStackTrace();
+			if (e.getType() != ErrorType.WINDOW_CLOSED) {
 
-			if (e.getType() != ErrorType.WINDOW_CLOSED) e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
+				e.printStackTrace();
+
+				e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
+
+				createCrashLog();
+
+			}
 
 			if (frame != null) frame.dispose();
 			if (loadingFrame != null) loadingFrame.dispose();
-
-			createCrashLog();
 
 		} catch (final Throwable t) {
 
@@ -221,7 +228,7 @@ public final class Texture_Patcher implements Runnable {
 
 			// Used for testing.
 
-			if (debug) readLine = "http://ksoartex.net/texture-patcher/data/config.json";
+			if (debug) readLine = "http://soartex.net/texture-patcher/data/config.json";
 
 			// Checks if the externalconfig.txt is the default.
 
@@ -305,6 +312,8 @@ public final class Texture_Patcher implements Runnable {
 
 			logger.log(Level.WARNING, t_p_e.getMessage());
 
+			t_p_e.printStackTrace();
+
 			t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
 
 		}
@@ -316,8 +325,17 @@ public final class Texture_Patcher implements Runnable {
 			frame = new JFrame((String) options.get("name") + (options.get("name").equals("Texture Patcher") ? " v." : " Patcher v."  ) + VERSION);
 			frame.setLayout(new GridBagLayout());
 
-			frame.setLocation(prefsnode.getInt("x", 50), prefsnode.getInt("y", 50));
 			frame.setSize(prefsnode.getInt("width", 500), prefsnode.getInt("height", 600));
+
+			if (prefsnode.getInt("x", -1000) != -1000 && prefsnode.getInt("y", -1000) != -1000) {
+
+				frame.setLocation(prefsnode.getInt("x", 50), prefsnode.getInt("y", 50));
+
+			} else {
+
+				frame.setLocationRelativeTo(null);
+
+			}
 
 			frame.setExtendedState(prefsnode.getInt("max", Frame.NORMAL));
 
@@ -347,6 +365,8 @@ public final class Texture_Patcher implements Runnable {
 			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.ICON_SETTING_FAILED, e);
 
 			logger.log(Level.WARNING, t_p_e.getMessage());
+
+			t_p_e.printStackTrace();
 
 			t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
 
@@ -380,7 +400,7 @@ public final class Texture_Patcher implements Runnable {
 
 			final JProgressBar progress = new JProgressBar(SwingConstants.HORIZONTAL);
 
-			progress.setIndeterminate(true);
+			progress.setStringPainted(true);
 			loadingFrame.add(progress, gbc);
 
 			gbc = new GridBagConstraints();
@@ -439,7 +459,7 @@ public final class Texture_Patcher implements Runnable {
 			loadingFrame.pack();
 			loadingFrame.setResizable(false);
 
-			loadingFrame.setLocation(150, 150);
+			loadingFrame.setLocationRelativeTo(null);
 			loadingFrame.setVisible(true);
 
 			// Load the mods from the config file.
@@ -505,31 +525,15 @@ public final class Texture_Patcher implements Runnable {
 
 				}
 
-				if (mod.equals("")) continue;
-
 				// URL of the mod zip.
 
 				final URL zipurl = new URL((String) options.get("zipsurl") + ((String) mod).replace(" ", "_") + ".zip");
 
 				try {
 
-					URLConnection connection;;
+					final URLConnection connection = zipurl.openConnection();
 
-					try {
-
-						connection = zipurl.openConnection();
-
-					} catch (final IOException e) {
-
-						// Retrying in the case of a 502.
-
-						logger.log(Level.WARNING, "IOException while loading mod " + mod + ", trying again!");
-
-						connection = zipurl.openConnection();
-
-					}
-
-					// CHeck if the file exists.
+					// Check if the file exists.
 
 					connection.getInputStream().close();
 
@@ -541,8 +545,8 @@ public final class Texture_Patcher implements Runnable {
 
 					row[1] = mod;
 
-					row[2] = ((JSONObject) mods.get(mod)).get("version") == null ? "Unknown" : (String)((JSONObject) mods.get(mod)).get("version");
-					row[3] = ((JSONObject) mods.get(mod)).get("mcversion") == null ? "Unknown" : (String)((JSONObject) mods.get(mod)).get("mcversion");
+					row[2] = String.valueOf(((JSONObject) mods.get(mod)).get("version") == null ? "Unknown" : ((JSONObject) mods.get(mod)).get("version"));
+					row[3] = String.valueOf(((JSONObject) mods.get(mod)).get("mcversion") == null ? "Unknown" : ((JSONObject) mods.get(mod)).get("mcversion"));
 
 					final int size = connection.getContentLength();
 
@@ -562,7 +566,7 @@ public final class Texture_Patcher implements Runnable {
 					message.setText("Loading mod # " + ++count);
 					title.setText((String) row[1]);
 
-					logger.log(Level.INFO, "Loading mod: " + mod + ".");
+					logger.log(Level.INFO, "Loading mod #" + count + ": " + mod + ".");
 
 					rows.add(row);
 
@@ -631,7 +635,7 @@ public final class Texture_Patcher implements Runnable {
 					message.setText("Loading modpack # " + ++count);
 					title.setText((String) modpack);
 
-					logger.log(Level.INFO, "Loading modpack: " + modpack + ".");
+					logger.log(Level.INFO, "Loading modpack #" + count + ": " + modpack + ".");
 
 				} catch (final Exception e) {
 
@@ -639,7 +643,7 @@ public final class Texture_Patcher implements Runnable {
 
 					e.printStackTrace();
 
-					logger.log(Level.WARNING, "Unable to load modpack " + modpack + ".");
+					logger.log(Level.WARNING, "Unable to load modpack #" + count + ": " + modpack + ".");
 
 					continue;
 
@@ -900,23 +904,9 @@ public final class Texture_Patcher implements Runnable {
 
 		try {
 
-			final String prefix = "Texture-Patcher-" + VERSION + " (";
+			final String filename = "Texture-Patcher-" + VERSION + " (" + new SimpleDateFormat("MM-dd-yyyy HH-mm-ss").format(new Date()) +  ").log";
 
-			File file;
-
-			int count = 0;
-
-			while (true) {
-
-				final String filename = prefix.concat(count++ + ").log");
-
-				file = new File(filename);
-
-				if (file.exists()) continue;
-
-				else break;
-
-			}
+			final File file = new File(filename);
 
 			final PrintWriter out = new PrintWriter(new FileWriter(file));
 
@@ -928,7 +918,7 @@ public final class Texture_Patcher implements Runnable {
 
 			out.close();
 
-			System.out.println("A log file can be found at " + file.getAbsolutePath() + " !");
+			System.out.println("A crash log can be found at " + file.getAbsolutePath() + " !");
 
 		} catch (final Exception e) {
 

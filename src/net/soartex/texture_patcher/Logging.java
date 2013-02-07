@@ -25,7 +25,7 @@ final class Logging {
 
 			// Print to System.out if the level is INFO, System.err if it is not.
 
-			final String log = getFormatter().format(lr);
+			final String log = getFormatter().format(lr).trim();
 
 			if (lr.getLevel() == Level.INFO) System.out.println(log);
 

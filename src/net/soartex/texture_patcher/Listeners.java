@@ -16,6 +16,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -107,9 +108,9 @@ final class Listeners {
 
 		@Override public void actionPerformed (final ActionEvent e) {
 
-			// Navigate to the URL specified by the configuration.
-
 			try {
+
+				// Navigate to the URL specified by the configuration.
 
 				Desktop.getDesktop().browse(new URI((String) t_p.options.get("url")));
 
@@ -119,9 +120,9 @@ final class Listeners {
 
 				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(t_p, ErrorType.WEBSITE_OPENING_FAILED, e1);
 
-				t_p.logger.log(Level.WARNING, t_p_e.getMessage());
+				t_p.logger.log(Level.SEVERE, t_p_e.getMessage());
 
-				t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
+				t_p_e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
 
 			}
 
@@ -143,39 +144,39 @@ final class Listeners {
 
 		@Override public void actionPerformed (final ActionEvent e) {
 
-			if (e.getActionCommand().equals("Select All")) {
+			try {
 
-				// Select all of the mods.
+				if (e.getActionCommand().equals("Select All")) {
 
-				for (int i = 0; i < t_p.tableData.length; i++) {
+					// Select all of the mods.
 
-					t_p.tableData[i][0] = true;
+					for (int i = 0; i < t_p.tableData.length; i++) {
 
-				}
+						t_p.tableData[i][0] = true;
 
-				t_p.table.updateUI();
+					}
 
-			} else if (e.getActionCommand().equals("Select None")) {
+					t_p.table.updateUI();
 
-				// Deselect all of the mods.
+				} else if (e.getActionCommand().equals("Select None")) {
 
-				for (int i = 0; i < t_p.tableData.length; i++){
+					// Deselect all of the mods.
 
-					t_p.tableData[i][0]= false;
+					for (int i = 0; i < t_p.tableData.length; i++){
 
-				}
+						t_p.tableData[i][0]= false;
 
-				t_p.table.updateUI();
+					}
 
-			} else {
+					t_p.table.updateUI();
 
-				// Check mods based on the selected modpack.
+				} else {
 
-				for (final Object modpack : t_p.modpacks.keySet()){
+					// Check mods based on the selected modpack.
 
-					if (e.getActionCommand().equals(modpack)) {
+					for (final Object modpack : t_p.modpacks.keySet()){
 
-						try {
+						if (e.getActionCommand().equals(modpack)) {
 
 							final BufferedReader in = new BufferedReader(new InputStreamReader(new URL((String) t_p.modpacks.get(modpack)).openStream()));
 
@@ -203,23 +204,23 @@ final class Listeners {
 
 							}
 
-						} catch (final IOException e1) {
-
-							// Happens if unable to load modpack file.
-
-							final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(t_p, ErrorType.MODPACK_SELECTION_FAILED, e1);
-
-							t_p.logger.log(Level.WARNING, t_p_e.getMessage());
-
-							t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
+							break;
 
 						}
-
-						break;
 
 					}
 
 				}
+
+			} catch (final Exception e1) {
+
+				// Happens if unable to load modpack file.
+
+				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(t_p, ErrorType.MODPACK_SELECTION_FAILED, e1);
+
+				t_p.logger.log(Level.SEVERE, t_p_e.getMessage());
+
+				t_p_e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
 
 			}
 
@@ -241,48 +242,62 @@ final class Listeners {
 
 		@Override public void actionPerformed (final ActionEvent e) {
 
-			// Initialize the file chooser.
+			try {
 
-			final JFileChooser fileChooser = new JFileChooser();
+				// Initialize the file chooser.
 
-			fileChooser.setAcceptAllFileFilterUsed(false);
-			fileChooser.setFileFilter(new ZipFileFilter());
+				final JFileChooser fileChooser = new JFileChooser();
 
-			// Resolve the stored directory and files.
+				fileChooser.setAcceptAllFileFilterUsed(false);
+				fileChooser.setFileFilter(new ZipFileFilter());
 
-			final File lastDir = new File(t_p.prefsnode.get("lastDir", System.getProperty("user.dir")));
+				// Resolve the stored directory and files.
 
-			if (lastDir.exists()) {
+				final File lastDir = new File(t_p.prefsnode.get("lastDir", System.getProperty("user.dir")));
 
-				fileChooser.setCurrentDirectory(lastDir);
+				if (lastDir.exists()) {
 
-			} else {
+					fileChooser.setCurrentDirectory(lastDir);
 
-				fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
+				} else {
 
-				t_p.path.setText("");
+					fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
 
-				t_p.checkUpdate.setEnabled(false);
-				t_p.patch.setEnabled(false);
+					t_p.path.setText("");
 
-				t_p.prefsnode.remove("path");
-				t_p.prefsnode.remove("lastDir");
+					t_p.checkUpdate.setEnabled(false);
+					t_p.patch.setEnabled(false);
+
+					t_p.prefsnode.remove("path");
+					t_p.prefsnode.remove("lastDir");
+
+				}
+
+				if (fileChooser.showOpenDialog(t_p.frame) != JFileChooser.APPROVE_OPTION) return;
+
+				// Save the selected file.
+
+				final File file = fileChooser.getSelectedFile();
+
+				t_p.path.setText(file.getAbsolutePath());
+
+				t_p.checkUpdate.setEnabled(true);
+				t_p.patch.setEnabled(true);
+
+				t_p.prefsnode.put("path", file.getAbsolutePath());
+				t_p.prefsnode.put("lastDir", file.getParent());
+
+			} catch (final Exception e1) {
+
+				// Happens if an error occurs while opening the browse dialog.
+
+				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(t_p, ErrorType.BROWSING_FAILED, e1);
+
+				t_p.logger.log(Level.SEVERE, t_p_e.getMessage());
+
+				t_p_e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
 
 			}
-
-			if (fileChooser.showOpenDialog(t_p.frame) != JFileChooser.APPROVE_OPTION) return;
-
-			// Save the selected file.
-
-			final File file = fileChooser.getSelectedFile();
-
-			t_p.path.setText(file.getAbsolutePath());
-
-			t_p.checkUpdate.setEnabled(true);
-			t_p.patch.setEnabled(true);
-
-			t_p.prefsnode.put("path", file.getAbsolutePath());
-			t_p.prefsnode.put("lastDir", file.getParent());
 
 		}
 
@@ -306,23 +321,37 @@ final class Listeners {
 
 		@Override public void actionPerformed (final ActionEvent e) {
 
-			// Check if the texture artist has provided a pack URL.
+			try {
 
-			if (t_p.options.get("packurl") == null) {
+				// Check if the texture artist has provided a pack URL.
 
-				JOptionPane.showMessageDialog(t_p.frame, "The texture-artist has not provided a URL for a pack to download!", "Error!", JOptionPane.ERROR_MESSAGE);
+				if (t_p.options.get("packurl") == null) {
 
-				return;
+					JOptionPane.showMessageDialog(t_p.frame, "The texture-artist has not provided a URL for a pack to download!", "Error!", JOptionPane.ERROR_MESSAGE);
+
+					return;
+
+				}
+
+				// Open the browse dialog, and check if a file has been selected.
+
+				if (!openBrowseDialog()) return;
+
+				// Start the downloading process.
+
+				new Thread(this).start();
+
+			} catch (final Exception e1) {
+
+				// Happens if an error occurs while downloading the pack.
+
+				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(t_p, ErrorType.PACK_DOWNLOADING_FAILED, e1);
+
+				t_p.logger.log(Level.SEVERE, t_p_e.getMessage());
+
+				t_p_e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
 
 			}
-
-			// Open the browse dialog, and check if a file has been selected.
-
-			if (!openBrowseDialog()) return;
-
-			// Start the downloading process.
-
-			new Thread(this).start();
 
 		}
 
@@ -401,16 +430,16 @@ final class Listeners {
 
 		@Override public void run () {
 
-			// Initialize the progress dialog.
-
-			progressdialog = new ProgressDialog(t_p);
-
-			progressdialog.setProgressValue(0);
-			progressdialog.setString("Downloading texture-pack...");
-
-			progressdialog.open();
-
 			try {
+
+				// Initialize the progress dialog.
+
+				progressdialog = new ProgressDialog(t_p);
+
+				progressdialog.setProgressValue(0);
+				progressdialog.setString("Downloading texture-pack...");
+
+				progressdialog.open();
 
 				// Download the pack.
 
@@ -469,38 +498,38 @@ final class Listeners {
 
 				out.close();
 
-			} catch (final Exception e) {
+				// Close the progress dialog.
 
-				// Happens if an error occurs while downloading the texture-pack.
+				progressdialog.setString("Done!");
+				progressdialog.setProgressValue(100);
 
-				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(t_p, ErrorType.PACK_DOWNLOADING_FAILED, e);
+				delay(1500);
+
+				progressdialog.close();
+
+				// Update the path field, buttons, and stored paths.
+
+				t_p.path.setText(file.getAbsolutePath());
+
+				t_p.checkUpdate.setEnabled(true);
+				t_p.patch.setEnabled(true);
+
+				t_p.prefsnode.put("path", file.getAbsolutePath());
+				t_p.prefsnode.put("lastDir", file.getParent());
+
+				t_p.frame.requestFocus();
+
+			} catch (final Exception e1) {
+
+				// Happens if an error occurs while downloading the pack.
+
+				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(t_p, ErrorType.PACK_DOWNLOADING_FAILED, e1);
 
 				t_p.logger.log(Level.SEVERE, t_p_e.getMessage());
 
 				t_p_e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
 
 			}
-
-			// Close the progress dialog.
-
-			progressdialog.setString("Done!");
-			progressdialog.setProgressValue(100);
-
-			delay(1500);
-
-			progressdialog.close();
-
-			// Update the path field, buttons, and stored paths.
-
-			t_p.path.setText(file.getAbsolutePath());
-
-			t_p.checkUpdate.setEnabled(true);
-			t_p.patch.setEnabled(true);
-
-			t_p.prefsnode.put("path", file.getAbsolutePath());
-			t_p.prefsnode.put("lastDir", file.getParent());
-
-			t_p.frame.requestFocus();
 
 		}
 
@@ -552,9 +581,15 @@ final class Listeners {
 
 				delete(TEMP_C);
 
-			} catch (final Throwable t) {
+			} catch (final Exception e) {
 
-				// Happens if an error occurs while checking for updates.
+				// Happens if an error occurs while checking the texture-pack for updates.
+
+				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(t_p, ErrorType.PACK_DOWNLOADING_FAILED, e);
+
+				t_p.logger.log(Level.SEVERE, t_p_e.getMessage());
+
+				t_p_e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
 
 			}
 
@@ -709,11 +744,15 @@ final class Listeners {
 
 		protected PatchListener (final Texture_Patcher t_p) {
 
+			// Receive the texture patcher instance for the listener.
+
 			this.t_p = t_p;
 
 		}
 
 		@Override public void actionPerformed (final ActionEvent e) {
+
+			// Start the patching process.
 
 			new Thread(this).start();
 
@@ -721,52 +760,88 @@ final class Listeners {
 
 		@Override public void run () {
 
-			time = System.currentTimeMillis();
+			try {
 
-			TEMP_A = new File(getTMP() + File.separator + ".Texture_Patcher_Temp_A_" + time);
-			TEMP_B = new File(getTMP() + File.separator + ".Texture_Patcher_Temp_B_" + time);
+				// Resolve the temporary folders.
 
-			progressdialog = new ProgressDialog(t_p);
+				time = System.currentTimeMillis();
 
-			progressdialog.setString("Extracting texture pack file (--/--)");
-			progressdialog.setProgressValue(0);
+				TEMP_A = new File(getTMP() + File.separator + ".Texture_Patcher_Temp_A_" + time);
+				TEMP_B = new File(getTMP() + File.separator + ".Texture_Patcher_Temp_B_" + time);
 
-			progressdialog.open();
+				// Initialize the progress dialog.
 
-			extractTexturepack();
+				progressdialog = new ProgressDialog(t_p);
 
-			progressdialog.setString("Compiling mods list...");
-			progressdialog.setProgressValue(25);
+				progressdialog.setString("Extracting texture pack file (--/--)");
+				progressdialog.setProgressValue(0);
 
-			compileModsList();
+				progressdialog.open();
 
-			progressdialog.setString("Downloading  mod (--/--)");
-			progressdialog.setProgressValue(25);
+				// Extract the texture pack.
 
-			downloadMods();
+				extractTexturepack();
 
-			progressdialog.setString("Extracting  mod (--/--)");
-			progressdialog.setProgressValue(50);
+				progressdialog.setString("Compiling mods list...");
+				progressdialog.setProgressValue(25);
 
-			extractMods();
+				// Compile the mods list.
 
-			progressdialog.setString("Compressing texture pack file (--/--)");
-			progressdialog.setProgressValue(75);
+				compileModsList();
 
-			compileTexturepack();
+				progressdialog.setString("Downloading  mod (--/--)");
+				progressdialog.setProgressValue(25);
 
-			progressdialog.setString("Done!");
-			progressdialog.setProgressValue(100);
+				// Download the mods.
 
-			delay(1500);
+				downloadMods();
 
-			progressdialog.close();
+				progressdialog.setString("Extracting  mod (--/--)");
+				progressdialog.setProgressValue(50);
 
-			t_p.frame.requestFocus();
+				// Extract the mod.
+
+				extractMods();
+
+				progressdialog.setString("Compressing texture pack file (--/--)");
+				progressdialog.setProgressValue(75);
+
+				// Compile the texture pack.
+
+				compileTexturepack();
+
+				// Return to normal.
+
+				progressdialog.setString("Done!");
+				progressdialog.setProgressValue(100);
+
+				delay(1500);
+
+				progressdialog.close();
+
+				t_p.frame.requestFocus();
+
+			} catch (final Exception e) {
+
+				// Happens if an error occurs while patching.
+
+				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(t_p, ErrorType.PATCHING_FAILED, e);
+
+				t_p.logger.log(Level.SEVERE, t_p_e.getMessage());
+
+				t_p_e.printStackTrace();
+
+				t_p_e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
+
+				progressdialog.close();
+
+			}
 
 		}
 
-		protected void extractTexturepack () {
+		protected void extractTexturepack () throws IOException {
+
+			// Make sure the temporary folder is ready.
 
 			delete(TEMP_A);
 
@@ -775,152 +850,148 @@ final class Listeners {
 
 			TEMP_A.mkdirs();
 
+			// Calculate progress percents.
+
+			int progressamount = 0;
+			int progresscount = 0;
+
 			try {
 
 				final ZipFile zipfile = new ZipFile(new File(t_p.path.getText()));
 
-				int count = 0;
+				if (zipfile.size() == 0) return;
 
-				final int progressamount = zipfile.size();
-				int progresscount = 0;
+				progressamount = zipfile.size();
 
 				zipfile.close();
 
-				final ZipInputStream zipin = new ZipInputStream(new FileInputStream(new File(t_p.path.getText())));
+			} catch (final Exception e) {
 
-				ZipEntry zipEntry;
-
-				final byte[] buffer = new byte[1024 * 1024];
-
-				while ((zipEntry = zipin.getNextEntry()) != null) {
-
-					final String fileName = zipEntry.getName();
-					final File destinationFile = new File(TEMP_A.getAbsolutePath() + File.separator + fileName);
-
-					progressdialog.setString("Extracting texture pack file (" + ++count + "/" + progressamount + ")");
-
-					if (zipEntry.isDirectory()) {
-
-						new File(destinationFile.getParent()).mkdirs();
-
-					} else {
-
-						try {
-
-							t_p.logger.log(Level.INFO, "Extracting: " + destinationFile.getAbsolutePath());
-
-							new File(destinationFile.getParent()).mkdirs();
-
-							final FileOutputStream out = new FileOutputStream(destinationFile);
-
-							int length;
-
-							while ((length = zipin.read(buffer, 0, buffer.length)) > -1) {
-
-								out.write(buffer, 0, length);
-
-							}
-
-							out.close();
-
-						} catch (final Exception e) {
-
-							e.printStackTrace();
-
-						}
-
-					}
-
-					if (++progresscount >= progressamount / 25) {
-
-						progressdialog.setProgressValue(progressdialog.getProgressValue() + 1);
-
-						progresscount = 0;
-
-					}
-
-
-				}
-
-				zipin.close();
-
-			} catch (final IOException e) {
+				t_p.logger.log(Level.WARNING, "Error opening zip file! Could it be emtpy?");
 
 				e.printStackTrace();
 
 			}
 
-		}
+			int count = 0;
 
-		protected void compileModsList () {
+			// Extract the texture pack.
 
-			final File modslist = new File(TEMP_A, "modslist.csv");
+			final ZipInputStream zipin = new ZipInputStream(new FileInputStream(new File(t_p.path.getText())));
 
-			String modslistcontents = "";
+			ZipEntry zipEntry;
 
-			if (modslist.exists()) {
+			final byte[] buffer = new byte[1024 * 1024];
 
-				try {
+			while ((zipEntry = zipin.getNextEntry()) != null) {
 
-					final BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(modslist)));
+				final String fileName = zipEntry.getName();
+				final File destinationFile = new File(TEMP_A.getAbsolutePath() + File.separator + fileName);
 
-					String readline;
+				progressdialog.setString("Extracting texture pack file (" + ++count + "/" + progressamount + ")");
 
-					reading: while ((readline = in.readLine()) != null) {
+				if (zipEntry.isDirectory()) {
 
-						rowing: for (final Object[] row : t_p.tableData) {
+					new File(destinationFile.getParent()).mkdirs();
 
-							if ((Boolean) row[0] == false) continue rowing;
+				} else {
 
-							if (readline.split(",")[0].equals(row[1])) {
+					t_p.logger.log(Level.INFO, "Extracting: " + destinationFile.getAbsolutePath());
 
-								continue reading;
+					new File(destinationFile.getParent()).mkdirs();
 
-							}
+					final FileOutputStream out = new FileOutputStream(destinationFile);
 
-						}
+					int length;
 
-					modslistcontents = modslistcontents.concat(readline + getLineSeparator());
+					while ((length = zipin.read(buffer, 0, buffer.length)) > -1) {
+
+						out.write(buffer, 0, length);
 
 					}
 
-					in.close();
-
-				} catch (final IOException e) {
-
-					e.printStackTrace();
+					out.close();
 
 				}
 
+				if (++progresscount >= progressamount / 25) {
+
+					progressdialog.setProgressValue(progressdialog.getProgressValue() + 1);
+
+					progresscount = 0;
+
+				}
+
+
 			}
+
+			zipin.close();
+
+		}
+
+		protected void compileModsList () throws IOException {
+
+			// Get the modslist file ready.
+
+			final File modslist = new File(TEMP_A, "modslist.csv");
+
+			final ArrayList<String> mods = new ArrayList<String>();
+
+			if (modslist.exists()) {
+
+				// Merge the modslist if it already exists.
+
+				final BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(modslist)));
+
+				String readline;
+
+				reading: while ((readline = in.readLine()) != null) {
+
+					rowing: for (final Object[] row : t_p.tableData) {
+
+						if ((Boolean) row[0] == false) continue rowing;
+
+						if (readline.split(",")[0].equals(row[1])) {
+
+							continue reading;
+
+						}
+
+					}
+
+				mods.add(readline);
+
+				}
+
+				in.close();
+
+			}
+
+			// Create the new modslist.
 
 			for (final Object[] row : t_p.tableData) {
 
 				if ((Boolean) row[0] == false) continue;
 
-				modslistcontents = modslistcontents.concat((String) row[1] + "," + ((Date) row[5]).getTime() + getLineSeparator());
+				mods.add((String) row[1] + "," + ((Date) row[5]).getTime());
 
 			}
 
-			modslistcontents = modslistcontents.trim();
+			final PrintWriter out = new PrintWriter(new FileWriter(modslist));
 
-			try {
+			for (final String mod : mods) {
 
-				final PrintWriter out = new PrintWriter(new FileOutputStream(modslist));
-
-				out.print(modslistcontents);
-
-				out.close();
-
-			} catch (final IOException e) {
-
-				e.printStackTrace();
+				out.println(mod);
 
 			}
+
+			out.close();
 
 		}
 
 		protected void downloadMods () {
+
+			// Make sure the temporary folder is ready.
 
 			delete(TEMP_B);
 
@@ -928,6 +999,8 @@ final class Listeners {
 			TEMP_B.deleteOnExit();
 
 			TEMP_B.mkdirs();
+
+			// Download the mods.
 
 			final byte[] buffer = new byte[1024 * 1024];
 
@@ -945,8 +1018,6 @@ final class Listeners {
 
 			int count = 0;
 
-			final int progressamount = 25 / modslist.size();
-
 			for (final String mod : modslist) {
 
 				try {
@@ -961,13 +1032,17 @@ final class Listeners {
 
 					} catch (final IOException e) {
 
+						// Retrying in the case of a 502.
+
+						t_p.logger.log(Level.WARNING, "IOException while downloading the mod, trying again!");
+
 						e.printStackTrace();
 
 						in = new URL(modurl).openStream();
 
 					}
 
-					t_p.logger.log(Level.INFO, "Downloading: " + mod);
+					t_p.logger.log(Level.INFO, "Downloading mod: " + mod);
 
 					progressdialog.setString("Downloading mod (" + ++count + "/" + modslist.size() + ")");
 
@@ -989,11 +1064,11 @@ final class Listeners {
 
 				} catch (final Exception e) {
 
+					t_p.logger.log(Level.WARNING, "Unable to download mod " + mod + ".");
+
 					e.printStackTrace();
 
 				}
-
-				progressdialog.setProgressValue(progressdialog.getProgressValue() + progressamount);
 
 			}
 
@@ -1001,17 +1076,17 @@ final class Listeners {
 
 		protected void extractMods () {
 
+			// Extract the mods.
+
 			final ArrayList<File> files = new ArrayList<File>();
 
 			getFiles(TEMP_B, files);
 
 			int count = 0;
 
-			final int progressamount = 25 / files.size();
-
 			for (final File file : files) {
 
-				t_p.logger.log(Level.INFO, "Extracting: " + file.getName());
+				t_p.logger.log(Level.INFO, "Extracting mod: " + file.getName());
 
 				progressdialog.setString("Extracting mod (" + ++count + "/" + files.size() + ")");
 
@@ -1034,27 +1109,19 @@ final class Listeners {
 
 						} else {
 
-							try {
+							new File(destinationFile.getParent()).mkdirs();
 
-								new File(destinationFile.getParent()).mkdirs();
+							final FileOutputStream out = new FileOutputStream(destinationFile);
 
-								final FileOutputStream out = new FileOutputStream(destinationFile);
+							int length;
 
-								int length;
+							while ((length = zipin.read(buffer, 0, buffer.length)) > -1) {
 
-								while ((length = zipin.read(buffer, 0, buffer.length)) > -1) {
-
-									out.write(buffer, 0, length);
-
-								}
-
-								out.close();
-
-							} catch (final Exception e) {
-
-								e.printStackTrace();
+								out.write(buffer, 0, length);
 
 							}
+
+							out.close();
 
 						}
 
@@ -1064,11 +1131,11 @@ final class Listeners {
 
 				} catch (final IOException e) {
 
+					t_p.logger.log(Level.WARNING, "Unable to extract " + file.getAbsolutePath() + " .");
+
 					e.printStackTrace();
 
 				}
-
-				progressdialog.setProgressValue(progressdialog.getProgressValue() + progressamount);
 
 			}
 
@@ -1076,83 +1143,67 @@ final class Listeners {
 
 		}
 
-		protected void compileTexturepack () {
+		protected void compileTexturepack () throws IOException {
 
-			try {
+			// Compile the texture pack.
 
-				final FileOutputStream out = new FileOutputStream(new File(t_p.path.getText()));
-				final ZipOutputStream zipout = new ZipOutputStream(out);
+			final FileOutputStream out = new FileOutputStream(new File(t_p.path.getText()));
+			final ZipOutputStream zipout = new ZipOutputStream(out);
 
-				t_p.logger.log(Level.INFO, "Compiling zip: " + new File(t_p.path.getText()).getAbsolutePath());
+			t_p.logger.log(Level.INFO, "Compiling texture pack: " + new File(t_p.path.getText()).getAbsolutePath());
 
-				final ArrayList<File> files = new ArrayList<File>();
+			final ArrayList<File> files = new ArrayList<File>();
 
-				getFiles(TEMP_A, files);
+			getFiles(TEMP_A, files);
 
-				final byte[] buffer = new byte[1024 * 1024];
+			final byte[] buffer = new byte[1024 * 1024];
 
-				int count = 0;
+			int count = 0;
 
-				final int progressamount = files.size() / 25;
-				int progresscount = 0;
+			final int progressamount = files.size() / 25;
+			int progresscount = 0;
 
-				for (final File file : files) {
+			for (final File file : files) {
 
-					final String temp = file.getAbsolutePath().substring(file.getAbsolutePath().indexOf(TEMP_A.getName()), file.getAbsolutePath().length());
-					final String zipentrypath = temp.substring(temp.indexOf(File.separator) + 1, temp.length());
+				final String temp = file.getAbsolutePath().substring(file.getAbsolutePath().indexOf(TEMP_A.getName()), file.getAbsolutePath().length());
+				final String zipentrypath = temp.substring(temp.indexOf(File.separator) + 1, temp.length());
 
-					t_p.logger.log(Level.INFO, "Compressing: " + zipentrypath);
+				t_p.logger.log(Level.INFO, "Compressing: " + zipentrypath);
 
-					progressdialog.setString("Compressing texture pack file (" + ++count + "/" + files.size() + ")");
+				progressdialog.setString("Compressing texture pack file (" + ++count + "/" + files.size() + ")");
 
-					final ZipEntry zipentry = new ZipEntry(zipentrypath.replace("\\", "/"));
+				final ZipEntry zipentry = new ZipEntry(zipentrypath.replace("\\", "/"));
 
-					zipout.putNextEntry(zipentry);
+				zipout.putNextEntry(zipentry);
 
-					final FileInputStream in = new FileInputStream(file);
+				final FileInputStream in = new FileInputStream(file);
 
-					int length;
+				int length;
 
-					while ((length = in.read(buffer, 0, buffer.length)) > -1) {
+				while ((length = in.read(buffer, 0, buffer.length)) > -1) {
 
-						zipout.write(buffer, 0, length);
-
-					}
-
-					in.close();
-
-					zipout.closeEntry();
-
-					if (++progresscount >= progressamount) {
-
-						progressdialog.setProgressValue(progressdialog.getProgressValue() + 1);
-
-						progresscount = 0;
-
-					}
+					zipout.write(buffer, 0, length);
 
 				}
 
-				zipout.close();
-				out.close();
+				in.close();
 
-			} catch (final IOException e) {
+				zipout.closeEntry();
 
-				e.printStackTrace();
+				if (++progresscount >= progressamount) {
+
+					progressdialog.setProgressValue(progressdialog.getProgressValue() + 1);
+
+					progresscount = 0;
+
+				}
 
 			}
 
+			zipout.close();
+			out.close();
+
 			delete(TEMP_A);
-
-		}
-
-		protected String getLineSeparator () {
-
-			final String OS = System.getProperty("os.name").toUpperCase();
-
-			if (OS.contains("WIN")) return "\r\n";
-
-			else return "\n";
 
 		}
 
@@ -1163,6 +1214,8 @@ final class Listeners {
 		protected final Texture_Patcher t_p;
 
 		protected ExitListener (final Texture_Patcher t_p) {
+
+			// Receive the texture patcher instance for the listener.
 
 			this.t_p = t_p;
 
@@ -1199,8 +1252,6 @@ final class Listeners {
 				final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(t_p, ErrorType.WINDOW_CLOSED, null);
 
 				t_p.logger.log(Level.SEVERE, t_p_e.getMessage());
-
-				t_p_e.printStackTrace();
 
 			}
 
@@ -1311,6 +1362,7 @@ final class Listeners {
 			frame.dispose();
 
 			t_p.frame.setEnabled(true);
+			t_p.frame.requestFocus();
 
 		}
 
@@ -1338,6 +1390,8 @@ final class Listeners {
 
 	protected static String getTMP () {
 
+		// Resolve the system's temporary directory.
+
 		final String OS = System.getProperty("os.name").toUpperCase();
 
 		if (OS.contains("WIN")) return System.getenv("TMP");
@@ -1350,6 +1404,8 @@ final class Listeners {
 	}
 
 	protected static void delay (final long time) {
+
+		// Create a thread delay for the given time.
 
 		try {
 
@@ -1364,6 +1420,8 @@ final class Listeners {
 	}
 
 	protected static void getFiles (final File f, final ArrayList<File> files) {
+
+		// Return all the files in a directory and its subdirectories.
 
 		if (f.isFile()) return;
 
@@ -1382,6 +1440,8 @@ final class Listeners {
 	}
 
 	protected static void delete (final File f) {
+
+		// Delete a folder and all of its subdirectories.
 
 		f.delete();
 
