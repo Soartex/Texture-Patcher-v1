@@ -400,7 +400,7 @@ public final class Texture_Patcher implements Runnable {
 
 			final JProgressBar progress = new JProgressBar(SwingConstants.HORIZONTAL);
 
-			progress.setStringPainted(true);
+			progress.setIndeterminate(true);
 			loadingFrame.add(progress, gbc);
 
 			gbc = new GridBagConstraints();
