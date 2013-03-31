@@ -69,6 +69,7 @@ public final class Texture_Patcher implements Runnable {
 	protected JSONObject options;
 	protected JSONObject mods;
 	protected JSONObject modpacks;
+	protected JSONObject branches;
 
 	protected Object[][] tableData;
 
@@ -127,9 +128,13 @@ public final class Texture_Patcher implements Runnable {
 
 			initializeLogger();
 
+			// Load the branch configuration.
+
+			String url = loadModBranch();
+                        
 			// Load the configuration.
 
-			loadConfig();
+			loadConfig(url);
 
 			// Initialize the window.
 
@@ -206,29 +211,92 @@ public final class Texture_Patcher implements Runnable {
 		logger.setUseParentHandlers(false);
 
 	}
+	@SuppressWarnings("unchecked")
+	protected String loadModBranch() throws Texture_Patcher_Exception{
+
+	    try {
+	        String readLine = "";
+	        String readLine2 = "";
+
+	        // Find external config file, first by class loader resource, then by the file system.
+	        if (getClass().getClassLoader().getResource("externalconfig.txt") != null){
+	            readLine = new BufferedReader(new InputStreamReader(getClass().getClassLoader().getResource("externalconfig.txt").openStream())).readLine();
+	            readLine2 = new BufferedReader(new InputStreamReader(getClass().getClassLoader().getResource("externalconfig.txt").openStream())).readLine();
+	        }
+	        else if (!debug) {
+	            throw new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_MISSING, null);
+	        }
+
+	        // Used for testing.
+	        if (debug) readLine = "http://soartex.net/texture-patcher/data/config.json";
+	        if (debug) readLine2 = "http://files.soartex.net/goldbattle/branches.json";
+
+	        // If the second config line for branches is not there. Return normal branch
+	        if (readLine2==null || readLine2.equals("")) {
+	            return readLine;
+	        }
+
+	        // Loads the JSON file for branch
+	        config = (JSONObject) new JSONParser().parse(new InputStreamReader(new URL(readLine2).openStream()));
+	        branches = (JSONObject) config.get("branches");
+
+	        // Load the branches data
+	        ArrayList<String[]> branchUrl = new ArrayList<String[]>();
+	        final TreeMap<Object, Object> branchest = new TreeMap<Object, Object>(branches);
+
+	        for (final Object branch : branchest.keySet()) {
+	            String readName = String.valueOf(((JSONObject) branches.get(branch)).get("name"));
+	            String readUrl = String.valueOf(((JSONObject) branches.get(branch)).get("url"));
+	            //if there is a url then add it to the list
+	            if(readUrl!=null&&readName!=null){
+	                String[] temp = new String[2];
+	                temp[0]=readName;
+	                temp[1]=readUrl;
+	                branchUrl.add(temp);
+	            }
+	        }
+
+	        // Display Option Pane for User
+	        String[] possibleValues = new String[branchUrl.size()];
+	        for(int i = 0; i < branchUrl.size(); i++){
+	            possibleValues[i] = branchUrl.get(i)[0];
+	        }
+	        String selectedValue = (String) JOptionPane.showInputDialog(null, "Mod Branch", "Branch", JOptionPane.INFORMATION_MESSAGE, null, possibleValues, possibleValues[possibleValues.length-1]);
+
+	        // Find the selected branch
+	        int selectedBranch=0;
+	        for(int i = 0; i < branchUrl.size(); i++){
+	            if(branchUrl.get(i)[0].equalsIgnoreCase(selectedValue)){
+	                selectedBranch=i;
+	            }
+	        }
+
+	        //return the branch
+	        return branchUrl.get(selectedBranch)[1];
+
+	        // Determine errors.
+
+	    } catch (final Texture_Patcher_Exception e) {
+
+	        // Happens for TPE's thrown in the method body for if statements.
+
+	        throw e;
+
+	    } catch (final Exception e) {
+
+	        // Happens for all other errors.
+
+	        throw new Texture_Patcher_Exception(this, ErrorType.CONFIG_LOADING_FAILED, e);
+
+	    }
+	}
 
 	@SuppressWarnings("unchecked")
-	protected void loadConfig () throws Texture_Patcher_Exception {
+	protected void loadConfig (final String branch) throws Texture_Patcher_Exception {
 
 		try {
 
-			String readLine = "";
-
-			// Find external config file, first by class loader resource, then by the file system.
-
-			if (getClass().getClassLoader().getResource("externalconfig.txt") != null)
-
-				readLine = new BufferedReader(new InputStreamReader(getClass().getClassLoader().getResource("externalconfig.txt").openStream())).readLine();
-
-			else if (!debug) {
-
-				throw new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_MISSING, null);
-
-			}
-
-			// Used for testing.
-
-			if (debug) readLine = "http://soartex.net/texture-patcher/data/config.json";
+			String readLine = branch;
 
 			// Checks if the externalconfig.txt is the default.
 
