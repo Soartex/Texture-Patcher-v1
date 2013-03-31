@@ -230,7 +230,7 @@ public final class Texture_Patcher implements Runnable {
 
 	        // Used for testing.
 	        if (debug) readLine = "http://soartex.net/texture-patcher/data/config.json";
-	        if (debug) readLine2 = "http://files.soartex.net/goldbattle/branches.json";
+	        if (debug) readLine2 = "http://soartex.net/texture-patcher/data/branches_dev.json";
 
 	        // If the second config line for branches is not there. Return normal branch
 	        if (readLine2==null || readLine2.equals("")) {
@@ -240,6 +240,11 @@ public final class Texture_Patcher implements Runnable {
 	        // Loads the JSON file for branch
 	        config = (JSONObject) new JSONParser().parse(new InputStreamReader(new URL(readLine2).openStream()));
 	        branches = (JSONObject) config.get("branches");
+	        
+	        // If branch file does not have branches default
+	        if(branches == null){
+	            return readLine;
+	        }
 
 	        // Load the branches data
 	        ArrayList<String[]> branchUrl = new ArrayList<String[]>();
@@ -264,6 +269,11 @@ public final class Texture_Patcher implements Runnable {
 	        }
 	        String selectedValue = (String) JOptionPane.showInputDialog(null, "Mod Branch", "Branch", JOptionPane.INFORMATION_MESSAGE, null, possibleValues, possibleValues[possibleValues.length-1]);
 
+	        // If cancel or exit is pressed the return value is null. Therefor exit the program
+	        if(selectedValue==null){
+	            System.exit(0);
+	        }
+	        
 	        // Find the selected branch
 	        int selectedBranch=branchUrl.size()-1;
 	        for(int i = 0; i < branchUrl.size(); i++){
