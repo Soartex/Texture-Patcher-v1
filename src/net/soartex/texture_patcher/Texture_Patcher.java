@@ -220,8 +220,9 @@ public final class Texture_Patcher implements Runnable {
 
 	        // Find external config file, first by class loader resource, then by the file system.
 	        if (getClass().getClassLoader().getResource("externalconfig.txt") != null){
-	            readLine = new BufferedReader(new InputStreamReader(getClass().getClassLoader().getResource("externalconfig.txt").openStream())).readLine();
-	            readLine2 = new BufferedReader(new InputStreamReader(getClass().getClassLoader().getResource("externalconfig.txt").openStream())).readLine();
+	            BufferedReader lineIn = new BufferedReader(new InputStreamReader(getClass().getClassLoader().getResource("externalconfig.txt").openStream()));
+	            readLine = lineIn.readLine();
+	            readLine2 = lineIn.readLine();
 	        }
 	        else if (!debug) {
 	            throw new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_MISSING, null);
@@ -264,7 +265,7 @@ public final class Texture_Patcher implements Runnable {
 	        String selectedValue = (String) JOptionPane.showInputDialog(null, "Mod Branch", "Branch", JOptionPane.INFORMATION_MESSAGE, null, possibleValues, possibleValues[possibleValues.length-1]);
 
 	        // Find the selected branch
-	        int selectedBranch=0;
+	        int selectedBranch=branchUrl.size()-1;
 	        for(int i = 0; i < branchUrl.size(); i++){
 	            if(branchUrl.get(i)[0].equalsIgnoreCase(selectedValue)){
 	                selectedBranch=i;
