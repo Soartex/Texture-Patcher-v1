@@ -58,7 +58,7 @@ public final class Texture_Patcher implements Runnable {
 
 	// Program variables.
 
-	protected final static float VERSION = 1.2F;
+	protected final static float VERSION = 1.1F;
 	protected static boolean debug = false;
 
 	protected final Preferences prefsnode = Preferences.userNodeForPackage(getClass());
@@ -267,7 +267,7 @@ public final class Texture_Patcher implements Runnable {
 	        for(int i = 0; i < branchUrl.size(); i++){
 	            possibleValues[i] = branchUrl.get(i)[0];
 	        }
-	        String selectedValue = (String) JOptionPane.showInputDialog(null, "Please Select a Mod Branch", "Select A Branch", JOptionPane.PLAIN_MESSAGE, null, possibleValues, possibleValues[possibleValues.length-1]);
+	        String selectedValue = (String) JOptionPane.showInputDialog(null, "Mod Branch", "Branch", JOptionPane.INFORMATION_MESSAGE, null, possibleValues, possibleValues[possibleValues.length-1]);
 
 	        // If cancel or exit is pressed the return value is null. Therefor exit the program
 	        if(selectedValue==null){
