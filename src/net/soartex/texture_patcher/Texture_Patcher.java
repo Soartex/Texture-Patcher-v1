@@ -230,7 +230,7 @@ public final class Texture_Patcher implements Runnable {
 
 	        // Used for testing.
 	        if (debug) readLine = "http://soartex.net/texture-patcher/data/config.json";
-	        if (debug) readLine2 = "http://soartex.net/texture-patcher/data/branches_dev.json";
+	        if (debug) readLine2 = "http://soartex.net/texture-patcher/data/branches.json";
 
 	        // If the second config line for branches is not there. Return normal branch
 	        if (readLine2==null || readLine2.equals("")) {

@@ -1,5 +1,6 @@
 package net.soartex.texture_patcher;
 
+import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.Frame;
 import java.awt.GridBagConstraints;
@@ -286,6 +287,13 @@ final class Listeners {
 
 				t_p.prefsnode.put("path", file.getAbsolutePath());
 				t_p.prefsnode.put("lastDir", file.getParent());
+				
+				// Clear cell highlighting
+				try {
+					TableRender tableRender = new TableRender(new ArrayList<Integer>(), new ArrayList<Integer>(), Color.red, Color.yellow);
+					t_p.table.getColumnModel().getColumn(1).setCellRenderer(tableRender);
+					t_p.table.updateUI();
+				} catch (Exception e2){}
 
 			} catch (final Exception e1) {
 
@@ -657,6 +665,10 @@ final class Listeners {
 			if (modslist.exists()) {
 
 				final ArrayList<String> updates = new ArrayList<String>();
+				
+				final ArrayList<Integer> rows1 = new ArrayList<Integer>();
+				
+				final ArrayList<Integer> rows2 = new ArrayList<Integer>();
 
 				final BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(modslist)));
 
@@ -664,6 +676,8 @@ final class Listeners {
 
 				while ((readline = in.readLine()) != null) {
 
+					int counter = 0;
+					
 					for (final Object[] row : t_p.tableData) {
 
 						if (readline.split(",")[0].equals(row[1])) {
@@ -682,9 +696,19 @@ final class Listeners {
 
 							final long newdate = ((Date) row[5]).getTime();
 
-							if (olddate < newdate) updates.add((String) row[1]);
+							// Add if it needs to be updated
+							if (olddate < newdate) {
+								updates.add((String) row[1]);
+								rows1.add(counter);
+							}
+							// Add to generic list of what is installed
+							else {
+								rows2.add(counter);
+							}
 
 						}
+
+						counter++;
 
 					}
 
@@ -705,6 +729,13 @@ final class Listeners {
 					}
 
 				}
+				
+				// Display highlighting boxes
+				try {
+					TableRender tableRender = new TableRender(rows1, rows2, Color.red, Color.yellow);
+					t_p.table.getColumnModel().getColumn(1).setCellRenderer(tableRender);
+					t_p.table.updateUI();
+				} catch (Exception e2){}
 
 			} else {
 
