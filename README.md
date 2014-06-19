@@ -1,6 +1,6 @@
 ## Texture Pack Patcher
 
-### _Original by REDX36, currently maintained by Chefe_
+### _Original by REDX36_
 
 See [soartex website](http://soartex.net/patcher) for more information.
 
