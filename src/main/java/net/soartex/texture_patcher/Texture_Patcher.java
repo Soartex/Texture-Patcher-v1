@@ -198,8 +198,8 @@ public final class Texture_Patcher implements Runnable {
             }
 
             // Used for testing.
-            readLine = "http://f.ofsg.eu/config.json";
-            readLine2 = "http://f.ofsg.eu/branches.json";
+            if (debug) readLine = "http://f.ofsg.eu/config.json";
+            if (debug) readLine2 = "http://f.ofsg.eu/branches.json";
 
             // If the second config line for branches is not there. Return normal branch
             if (readLine2 == null || readLine2.equals("")) {
