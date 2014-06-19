@@ -1,1 +1,2 @@
-# Put the URL of your hosted configuration file here!
+http://soartex.net/texture-patcher/data/config.json
+http://soartex.net/texture-patcher/data/branches.json
