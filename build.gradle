@@ -21,6 +21,5 @@ jar {
         attributes 'Implementation-Title': 'Texture Patcher'
         attributes 'Implementation-Version': version
         attributes "Main-Class": 'net.soartex.texture_patcher.Texture_Patcher'
-        attributes "Class-Path": '.'
     }
 }

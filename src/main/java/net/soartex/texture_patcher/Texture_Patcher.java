@@ -1,5 +1,6 @@
 package net.soartex.texture_patcher;
 
+import com.google.common.io.Resources;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
@@ -21,8 +22,6 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
-
-import static com.google.common.io.Files.readLines;
 
 /**
  * Texture_Patcher main class.
@@ -199,11 +198,11 @@ public final class Texture_Patcher implements Runnable {
 
             // Find external config file, first by class loader resource, then by the file system.
             if (getClass().getClassLoader().getResource("externalconfig.txt") != null) {
-                List<String> cfgLines = readLines(new File(getClass().getClassLoader().getResource("externalconfig.txt").getFile()), Charset.defaultCharset());
+                List<String> cfgLines = Resources.readLines(Resources.getResource("externalconfig.txt"), Charset.defaultCharset());
 
                 LinkedList<String> tmpList = new LinkedList<String>();
                 for (String entry : cfgLines) {
-                    if (entry.startsWith("#")) {
+                    if (entry.startsWith("#") || entry.isEmpty()) {
                         continue;
                     }
 
