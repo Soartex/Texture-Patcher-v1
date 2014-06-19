@@ -3,8 +3,6 @@
 
 See our website for more information. [http://soartex.net/patcher/](http://soartex.net/patcher/)
 
-* * *
-
 This is a program made for use with the game minecraft. This patcher allows for players to add modded "patches" to their texture packs. The patcher releases on this repo are prepared so that any organization can set it up with their own server and use the system. 
 
 ####Contributors
