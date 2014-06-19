@@ -1,731 +1,693 @@
+/*
+ * Copyright (c) 2014 Soartex Fanver Team.
+ */
+
 package net.soartex.texture_patcher;
 
-import java.awt.Frame;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.Toolkit;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
-import java.awt.image.BufferedImage;
+import javax.swing.*;
+import javax.swing.UIManager.LookAndFeelInfo;
+import java.awt.*;
 import java.io.*;
-
 import java.net.URL;
 import java.net.URLConnection;
-
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.TreeMap;
-
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import java.util.prefs.Preferences;
 
-import javax.swing.ButtonGroup;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JProgressBar;
-import javax.swing.JRadioButtonMenuItem;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.SwingConstants;
-import javax.swing.UIManager;
-import javax.swing.UIManager.LookAndFeelInfo;
-import javax.swing.WindowConstants;
 
-import org.json.simple.JSONObject;
-
-import org.json.simple.parser.JSONParser;
-
-/**
- * Texture_Patcher main class.
- * 
- * @author REDX36
- * @version 2.3
- *
- */
 public final class Texture_Patcher implements Runnable {
+    // Program variables.
+    protected final static float VERSION = 2.3F;
+    protected static boolean debug = false;
 
-	// Program variables.
-	protected final static float VERSION = 2.3F;
-	protected static boolean debug = false;
+    protected final Preferences prefsnode = Preferences.userNodeForPackage(getClass());
+    protected final Logger logger = Logger.getLogger(getClass().getName() + "." + System.currentTimeMillis());
+    protected ArrayList<String> logs = new ArrayList<String>();
 
-	protected final Preferences prefsnode = Preferences.userNodeForPackage(getClass());
-	protected final Logger logger = Logger.getLogger(getClass().getName() + "." + System.currentTimeMillis());
-	protected ArrayList<String> logs = new ArrayList<String>();
+    protected JSONObject config;
+    protected JSONObject options;
+    protected JSONObject mods;
+    protected JSONObject modpacks;
+    protected JSONObject branches;
 
-	protected JSONObject config;
-	protected JSONObject options;
-	protected JSONObject mods;
-	protected JSONObject modpacks;
-	protected JSONObject branches;
+    protected Object[][] tableData;
 
-	protected Object[][] tableData;
+    // Swing objects.
+    protected JFrame frame;
+    protected JFrame loadingFrame;
 
-	// Swing objects.
-	protected JFrame frame;
-	protected JFrame loadingFrame;
+    protected JTextField path;
+    protected JButton checkUpdate;
+    protected JButton patch;
+    protected JTable table;
 
-	protected JTextField path;
-	protected JButton checkUpdate;
-	protected JButton patch;
-	protected JTable table;
+    // Public methods
 
-	// Public methods
+    /**
+     * Sets certain Mac OSX Cocoa system flags, checks arguments for debug mode, and runs the patcher in a separate thread.
+     *
+     * @param args If <code>args</code> is longer than 0, and <code>args[0]</code> evaluates to <code>true</code>,
+     */
+    public static void main(final String[] args) {
+        // Set certain properties specific to Mac OSX Cocoa.
+        System.setProperty("apple.laf.useScreenMenuBar", "true");
+        System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Texture-Patcher v." + VERSION);
 
-	/**
-	 * Sets certain Mac OSX Cocoa system flags, checks arguments for debug mode, and runs the patcher in a separate thread.
-	 * 
-	 * @param args If <code>args</code> is longer than 0, and <code>args[0]</code> evaluates to <code>true</code>,
-	 * 
-	 */
-	public static void main (final String[] args) {
+        // Start the patcher in its own thread.
+        new Thread(new Texture_Patcher()).start();
+    }
 
-		// Set certain properties specific to Mac OSX Cocoa.
-		System.setProperty("apple.laf.useScreenMenuBar", "true");
-		System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Texture-Patcher v." + VERSION);
-
-		// Start the patcher in its own thread.
-		new Thread(new Texture_Patcher()).start();
-
-	}
-
-	@Override public void run () {
-	    try {
-
-			// Set the native look ad feel for before the skin in the config is loaded.
-			try {
-				UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+    @Override
+    public void run() {
+        try {
+            // Set the native look ad feel for before the skin in the config is loaded.
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             } catch (final Exception e1) {
-				e1.printStackTrace();
-			}
+                e1.printStackTrace();
+            }
 
-			// Initialize the logger.
-			initializeLogger();
+            // Initialize the logger.
+            initializeLogger();
 
-			// Load the branch configuration.
-			String url = loadModBranch();
-                        
-			// Load the configuration.
-			loadConfig(url);
+            // Load the branch configuration.
+            String url = loadModBranch();
 
-			// Initialize the window.
-			initializeWindow();
+            // Load the configuration.
+            loadConfig(url);
 
-			// Load the files.
-			loadFiles();
+            // Initialize the window.
+            initializeWindow();
 
-			// Initialize the components.
-			initializeComponents();
+            // Load the files.
+            loadFiles();
 
-			// Open the window.
-			frame.setVisible(true);
+            // Initialize the components.
+            initializeComponents();
 
-			// Check for updates.
-			checkUpdate();
+            // Open the window.
+            frame.setVisible(true);
 
-		} catch (final Texture_Patcher_Exception e) {
+            // Check for updates.
+            checkUpdate();
+        } catch (final Texture_Patcher_Exception e) {
+            // Happens in the event of a caught but fatal error.
+            logger.log(Level.SEVERE, e.getMessage());
 
-			// Happens in the event of a caught but fatal error.
-			logger.log(Level.SEVERE, e.getMessage());
+            if (e.getType() != ErrorType.WINDOW_CLOSED) {
+                e.printStackTrace();
+                e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
+                createCrashLog();
+            }
 
-			if (e.getType() != ErrorType.WINDOW_CLOSED) {
-				e.printStackTrace();
-				e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
-				createCrashLog();
-			}
+            if (frame != null) frame.dispose();
+            if (loadingFrame != null) loadingFrame.dispose();
+        } catch (final Throwable t) {
+            // Happens in the event of an uncaught error.
+            final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.UNEXPECTED_EXCEPTION, t);
+            logger.log(Level.SEVERE, t_p_e.getMessage());
+            t_p_e.printStackTrace();
+            t_p_e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
+            if (frame != null) frame.dispose();
+            if (loadingFrame != null) loadingFrame.dispose();
+            createCrashLog();
+        }
+    }
 
-			if (frame != null) frame.dispose();
-			if (loadingFrame != null) loadingFrame.dispose();
+    // Protected methods.
+    protected void initializeLogger() {
+        // Initialize the logger with the custom handlers and formatter.
+        logger.setLevel(Level.INFO);
 
-		} catch (final Throwable t) {
+        final Logging.LoggingHandler handler = new Logging.LoggingHandler(this);
+        handler.setFormatter(new Logging.LoggingFormatter());
 
-			// Happens in the event of an uncaught error.
-			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.UNEXPECTED_EXCEPTION, t);
-			logger.log(Level.SEVERE, t_p_e.getMessage());
-			t_p_e.printStackTrace();
-			t_p_e.showDialog("Error!", JOptionPane.ERROR_MESSAGE);
-			if (frame != null) frame.dispose();
-			if (loadingFrame != null) loadingFrame.dispose();
-			createCrashLog();
-		}
-	}
+        logger.addHandler(handler);
+        logger.setUseParentHandlers(false);
+    }
 
-	// Protected methods.
-	protected void initializeLogger () {
+    @SuppressWarnings("unchecked")
+    protected String loadModBranch() throws Texture_Patcher_Exception {
+        try {
+            String readLine = "";
+            String readLine2 = "";
 
-		// Initialize the logger with the custom handlers and formatter.
-		logger.setLevel(Level.INFO);
+            // Find external config file, first by class loader resource, then by the file system.
+            if (getClass().getClassLoader().getResource("externalconfig.txt") != null) {
+                BufferedReader lineIn = new BufferedReader(new InputStreamReader(getClass().getClassLoader().getResource("externalconfig.txt").openStream()));
+                readLine = lineIn.readLine();
+                readLine2 = lineIn.readLine();
+            } else if (!debug) {
+                throw new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_MISSING, null);
+            }
 
-		final Logging.LoggingHandler handler = new Logging.LoggingHandler(this);
-		handler.setFormatter(new Logging.LoggingFormatter());
+            // Used for testing.
+            if (debug) readLine = "http://soartex.net/texture-patcher/data/config.json";
+            if (debug) readLine2 = "http://soartex.net/texture-patcher/data/branches.json";
 
-		logger.addHandler(handler);
-		logger.setUseParentHandlers(false);
+            // If the second config line for branches is not there. Return normal branch
+            if (readLine2 == null || readLine2.equals("")) {
+                return readLine;
+            }
 
-	}
-	@SuppressWarnings("unchecked")
-	protected String loadModBranch() throws Texture_Patcher_Exception{
-
-	    try {
-	        String readLine = "";
-	        String readLine2 = "";
-
-	        // Find external config file, first by class loader resource, then by the file system.
-	        if (getClass().getClassLoader().getResource("externalconfig.txt") != null){
-	            BufferedReader lineIn = new BufferedReader(new InputStreamReader(getClass().getClassLoader().getResource("externalconfig.txt").openStream()));
-	            readLine = lineIn.readLine();
-	            readLine2 = lineIn.readLine();
-	        }
-	        else if (!debug) {
-	            throw new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_MISSING, null);
-	        }
-
-	        // Used for testing.
-	        if (debug) readLine = "http://soartex.net/texture-patcher/data/config.json";
-	        if (debug) readLine2 = "http://soartex.net/texture-patcher/data/branches.json";
-
-	        // If the second config line for branches is not there. Return normal branch
-	        if (readLine2==null || readLine2.equals("")) {
-	            return readLine;
-	        }
-
-	        // Loads the JSON file for branch
+            // Loads the JSON file for branch
             URLConnection connection = new URL(readLine2).openConnection();
-            connection.setRequestProperty("User-Agent","Mozilla/5.0 ( compatible ) ");
-            connection.setRequestProperty("Accept","*/*");
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0 ( compatible ) ");
+            connection.setRequestProperty("Accept", "*/*");
             config = (JSONObject) new JSONParser().parse(new InputStreamReader(connection.getInputStream()));
 
-	        branches = (JSONObject) config.get("branches");
-	        
-	        // If branch file does not have branches default
-	        if(branches == null){
-	            return readLine;
-	        }
+            branches = (JSONObject) config.get("branches");
 
-	        // Load the branches data
-	        ArrayList<String[]> branchUrl = new ArrayList<String[]>();
-	        final TreeMap<Object, Object> branchest = new TreeMap<Object, Object>(branches);
+            // If branch file does not have branches default
+            if (branches == null) {
+                return readLine;
+            }
 
-	        for (final Object branch : branchest.keySet()) {
-	            String readName = String.valueOf(((JSONObject) branches.get(branch)).get("name"));
-	            String readUrl = String.valueOf(((JSONObject) branches.get(branch)).get("url"));
-	            //if there is a url then add it to the list
-	            if(readUrl!=null&&readName!=null){
-	                String[] temp = new String[2];
-	                temp[0]=readName;
-	                temp[1]=readUrl;
-	                branchUrl.add(temp);
-	            }
-	        }
+            // Load the branches data
+            ArrayList<String[]> branchUrl = new ArrayList<String[]>();
+            final TreeMap<Object, Object> branchest = new TreeMap<Object, Object>(branches);
 
-	        // Display Option Pane for User
-	        String[] possibleValues = new String[branchUrl.size()];
-	        for(int i = 0; i < branchUrl.size(); i++){
-	            possibleValues[i] = branchUrl.get(i)[0];
-	        }
-	        String selectedValue = (String) JOptionPane.showInputDialog(null, "Please Select a Mod Branch", "Select A Branch", JOptionPane.PLAIN_MESSAGE, null, possibleValues, possibleValues[possibleValues.length-1]);
+            for (final Object branch : branchest.keySet()) {
+                String readName = String.valueOf(((JSONObject) branches.get(branch)).get("name"));
+                String readUrl = String.valueOf(((JSONObject) branches.get(branch)).get("url"));
+                //if there is a url then add it to the list
+                if (readUrl != null && readName != null) {
+                    String[] temp = new String[2];
+                    temp[0] = readName;
+                    temp[1] = readUrl;
+                    branchUrl.add(temp);
+                }
+            }
 
-	        // If cancel or exit is pressed the return value is null. Therefor exit the program
-	        if(selectedValue==null){
-	            System.exit(0);
-	        }
-	        
-	        // Find the selected branch
-	        int selectedBranch=branchUrl.size()-1;
-	        for(int i = 0; i < branchUrl.size(); i++){
-	            if(branchUrl.get(i)[0].equalsIgnoreCase(selectedValue)){
-	                selectedBranch=i;
-	            }
-	        }
+            // Display Option Pane for User
+            String[] possibleValues = new String[branchUrl.size()];
+            for (int i = 0; i < branchUrl.size(); i++) {
+                possibleValues[i] = branchUrl.get(i)[0];
+            }
+            String selectedValue = (String) JOptionPane.showInputDialog(null, "Please Select a Mod Branch", "Select A Branch", JOptionPane.PLAIN_MESSAGE, null, possibleValues, possibleValues[possibleValues.length - 1]);
 
-	        //return the branch
-	        return branchUrl.get(selectedBranch)[1];
+            // If cancel or exit is pressed the return value is null. Therefor exit the program
+            if (selectedValue == null) {
+                System.exit(0);
+            }
 
-	        // Determine errors.
-	    } catch (final Texture_Patcher_Exception e) {
+            // Find the selected branch
+            int selectedBranch = branchUrl.size() - 1;
+            for (int i = 0; i < branchUrl.size(); i++) {
+                if (branchUrl.get(i)[0].equalsIgnoreCase(selectedValue)) {
+                    selectedBranch = i;
+                }
+            }
 
-	        // Happens for TPE's thrown in the method body for if statements.
-	        throw e;
+            //return the branch
+            return branchUrl.get(selectedBranch)[1];
+        } catch (final Texture_Patcher_Exception e) {
+            // Happens for TPE's thrown in the method body for if statements.
+            throw e;
+        } catch (final Exception e) {
+            // Happens for all other errors.
+            throw new Texture_Patcher_Exception(this, ErrorType.CONFIG_LOADING_FAILED, e);
+        }
+    }
 
-	    } catch (final Exception e) {
+    @SuppressWarnings("unchecked")
+    protected void loadConfig(final String branch) throws Texture_Patcher_Exception {
+        try {
+            String readLine = branch;
 
-	        // Happens for all other errors.
-	        throw new Texture_Patcher_Exception(this, ErrorType.CONFIG_LOADING_FAILED, e);
+            // Checks if the externalconfig.txt is the default.
+            if (readLine.startsWith("#")) {
+                throw new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_DEFAULT, null);
+            }
 
-	    }
-	}
-
-	@SuppressWarnings("unchecked")
-	protected void loadConfig (final String branch) throws Texture_Patcher_Exception {
-		try {
-			String readLine = branch;
-
-			// Checks if the externalconfig.txt is the default.
-			if (readLine.startsWith("#")) {
-				throw new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_DEFAULT, null);
-			}
-
-			// Loads the JSON file.
+            // Loads the JSON file.
             URLConnection connection = new URL(readLine).openConnection();
-            connection.setRequestProperty("User-Agent","Mozilla/5.0 ( compatible ) ");
-            connection.setRequestProperty("Accept","*/*");
-			config = (JSONObject) new JSONParser().parse(new InputStreamReader(connection.getInputStream()));
-			options = (JSONObject) config.get("options");
-			mods = (JSONObject) config.get("mods");
-			modpacks = (JSONObject) config.get("modpacks");
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0 ( compatible ) ");
+            connection.setRequestProperty("Accept", "*/*");
+            config = (JSONObject) new JSONParser().parse(new InputStreamReader(connection.getInputStream()));
+            options = (JSONObject) config.get("options");
+            mods = (JSONObject) config.get("mods");
+            modpacks = (JSONObject) config.get("modpacks");
 
-			// Checks if the root or zips URLs are missing.
-			if (options.get("zipsurl") == null) {
-				throw new Texture_Patcher_Exception(this, ErrorType.CONFIG_INCOMPLETE, null);
-			}
-			if (options.get("name") == null) options.put("name", "Texture Patcher");
-			// Determine errors.
-		} catch (final Texture_Patcher_Exception e) {
-			// Happens for TPE's thrown in the method body for if statements.
-			throw e;
-		} catch (final Exception e) {
-			// Happens for all other errors.
-			throw new Texture_Patcher_Exception(this, ErrorType.CONFIG_LOADING_FAILED, e);
-		}
-	}
+            // Checks if the root or zips URLs are missing.
+            if (options.get("zipsurl") == null) {
+                throw new Texture_Patcher_Exception(this, ErrorType.CONFIG_INCOMPLETE, null);
+            }
+            if (options.get("name") == null) options.put("name", "Texture Patcher");
+            // Determine errors.
+        } catch (final Texture_Patcher_Exception e) {
+            // Happens for TPE's thrown in the method body for if statements.
+            throw e;
+        } catch (final Exception e) {
+            // Happens for all other errors.
+            throw new Texture_Patcher_Exception(this, ErrorType.CONFIG_LOADING_FAILED, e);
+        }
+    }
 
-	protected void initializeWindow () throws Texture_Patcher_Exception {
-		// Set the skin from the configuration.
-		try {
-			if ((String) options.get("skin") != null) {
-				if (options.get("skin").equals("native")) {
-					UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-				} else {
-					for (final LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-						if (info.getName().equalsIgnoreCase((String) options.get("skin"))) {
-							UIManager.setLookAndFeel(info.getClassName());
-							break;
-						}
-					}
-				}
-			}
-		} catch (final Exception e) {
-			// Happens if the skin cannot be found, or if an error occurs while setting it.
-			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.SKIN_SETTING_FAILED, e);
-			logger.log(Level.WARNING, t_p_e.getMessage());
-			t_p_e.printStackTrace();
-			t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
-		}
-		try {
-			// Configure the frame.
-			frame = new JFrame((String) options.get("name") + (options.get("name").equals("Texture Patcher") ? " v." : " Patcher v."  ) + VERSION);
-			frame.setLayout(new GridBagLayout());
-			frame.setSize(prefsnode.getInt("width", 500), prefsnode.getInt("height", 600));
-			if (prefsnode.getInt("x", -1000) != -1000 && prefsnode.getInt("y", -1000) != -1000) {
-				frame.setLocation(prefsnode.getInt("x", 50), prefsnode.getInt("y", 50));
-			} else {
-				frame.setLocationRelativeTo(null);
-			}
-			frame.setExtendedState(prefsnode.getInt("max", Frame.NORMAL));
-			frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-			frame.addWindowListener(new Listeners.ExitListener(this));
-		} catch (final Exception e) {
-			// Happens if an error occurs while initializing the window.
-			throw new Texture_Patcher_Exception(this, ErrorType.WINDOW_INITIALIZATION_FAILED, e);
-		}
+    protected void initializeWindow() throws Texture_Patcher_Exception {
+        // Set the skin from the configuration.
+        try {
+            if ((String) options.get("skin") != null) {
+                if (options.get("skin").equals("native")) {
+                    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+                } else {
+                    for (final LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+                        if (info.getName().equalsIgnoreCase((String) options.get("skin"))) {
+                            UIManager.setLookAndFeel(info.getClassName());
+                            break;
+                        }
+                    }
+                }
+            }
+        } catch (final Exception e) {
+            // Happens if the skin cannot be found, or if an error occurs while setting it.
+            final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.SKIN_SETTING_FAILED, e);
+            logger.log(Level.WARNING, t_p_e.getMessage());
+            t_p_e.printStackTrace();
+            t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
+        }
+        try {
+            // Configure the frame.
+            frame = new JFrame((String) options.get("name") + (options.get("name").equals("Texture Patcher") ? " v." : " Patcher v.") + VERSION);
+            frame.setLayout(new GridBagLayout());
+            frame.setSize(prefsnode.getInt("width", 500), prefsnode.getInt("height", 600));
+            if (prefsnode.getInt("x", -1000) != -1000 && prefsnode.getInt("y", -1000) != -1000) {
+                frame.setLocation(prefsnode.getInt("x", 50), prefsnode.getInt("y", 50));
+            } else {
+                frame.setLocationRelativeTo(null);
+            }
+            frame.setExtendedState(prefsnode.getInt("max", Frame.NORMAL));
+            frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+            frame.addWindowListener(new Listeners.ExitListener(this));
+        } catch (final Exception e) {
+            // Happens if an error occurs while initializing the window.
+            throw new Texture_Patcher_Exception(this, ErrorType.WINDOW_INITIALIZATION_FAILED, e);
+        }
 
-		// Load the frame icon.
-		try {
+        // Load the frame icon.
+        try {
             URLConnection connection = new URL(options.get("iconurl") == null ? "http://soartex.net/texture-patcher/data/icon.png" : (String) options.get("iconurl")).openConnection();
-            connection.setRequestProperty("User-Agent","Mozilla/5.0 ( compatible ) ");
-            connection.setRequestProperty("Accept","*/*");
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0 ( compatible ) ");
+            connection.setRequestProperty("Accept", "*/*");
             BufferedInputStream in = new BufferedInputStream(connection.getInputStream());
             ByteArrayOutputStream byteArrayOut = new ByteArrayOutputStream();
             int c;
             while ((c = in.read()) != -1) {
                 byteArrayOut.write(c);
             }
-			frame.setIconImage(Toolkit.getDefaultToolkit().createImage(byteArrayOut.toByteArray()));
-		} catch (final Exception e) {
-			// Happens if an error occurs while setting the icon.
-			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.ICON_SETTING_FAILED, e);
-			logger.log(Level.WARNING, t_p_e.getMessage());
-			t_p_e.printStackTrace();
-			t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
-		}
+            frame.setIconImage(Toolkit.getDefaultToolkit().createImage(byteArrayOut.toByteArray()));
+        } catch (final Exception e) {
+            // Happens if an error occurs while setting the icon.
+            final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.ICON_SETTING_FAILED, e);
+            logger.log(Level.WARNING, t_p_e.getMessage());
+            t_p_e.printStackTrace();
+            t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
+        }
 
-	}
+    }
 
-	protected void loadFiles () throws Texture_Patcher_Exception {
-		try {
-			// Initialize the loading dialog.
-			loadingFrame = new JFrame("Loading files...");
-			loadingFrame.setLayout(new GridBagLayout());
-			final Insets insets = new Insets(2, 2, 1, 2);
-			GridBagConstraints gbc = new GridBagConstraints();
+    protected void loadFiles() throws Texture_Patcher_Exception {
+        try {
+            // Initialize the loading dialog.
+            loadingFrame = new JFrame("Loading files...");
+            loadingFrame.setLayout(new GridBagLayout());
+            final Insets insets = new Insets(2, 2, 1, 2);
+            GridBagConstraints gbc = new GridBagConstraints();
 
-			gbc.gridx = 0;
-			gbc.gridy = 0;
-			gbc.gridwidth = 1;
-			gbc.weightx = 1;
-			gbc.weighty = 1;
-			gbc.fill = GridBagConstraints.HORIZONTAL;
-			gbc.anchor = GridBagConstraints.NORTH;
-			gbc.insets = insets;
+            gbc.gridx = 0;
+            gbc.gridy = 0;
+            gbc.gridwidth = 1;
+            gbc.weightx = 1;
+            gbc.weighty = 1;
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            gbc.anchor = GridBagConstraints.NORTH;
+            gbc.insets = insets;
 
-			// Initialize the progress bar.
-			final JProgressBar progress = new JProgressBar(SwingConstants.HORIZONTAL);
-			progress.setIndeterminate(true);
-			loadingFrame.add(progress, gbc);
-			gbc = new GridBagConstraints();
+            // Initialize the progress bar.
+            final JProgressBar progress = new JProgressBar(SwingConstants.HORIZONTAL);
+            progress.setIndeterminate(true);
+            loadingFrame.add(progress, gbc);
+            gbc = new GridBagConstraints();
 
-			gbc.gridx = 0;
-			gbc.gridy = 1;
-			gbc.gridwidth = 1;
-			gbc.weightx = 1;
-			gbc.weighty = 1;
-			gbc.fill = GridBagConstraints.HORIZONTAL;
-			gbc.anchor = GridBagConstraints.NORTH;
-			gbc.insets = insets;
+            gbc.gridx = 0;
+            gbc.gridy = 1;
+            gbc.gridwidth = 1;
+            gbc.weightx = 1;
+            gbc.weighty = 1;
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            gbc.anchor = GridBagConstraints.NORTH;
+            gbc.insets = insets;
 
-			// Initialize the static message label.
-			final JLabel label = new JLabel("Please wait patiently while we load your files...", SwingConstants.CENTER);
-			loadingFrame.add(label, gbc);
-			gbc = new GridBagConstraints();
+            // Initialize the static message label.
+            final JLabel label = new JLabel("Please wait patiently while we load your files...", SwingConstants.CENTER);
+            loadingFrame.add(label, gbc);
+            gbc = new GridBagConstraints();
 
-			gbc.gridx = 0;
-			gbc.gridy = 2;
-			gbc.gridwidth = 1;
-			gbc.weightx = 1;
-			gbc.weighty = 1;
-			gbc.fill = GridBagConstraints.HORIZONTAL;
-			gbc.anchor = GridBagConstraints.NORTH;
-			gbc.insets = insets;
+            gbc.gridx = 0;
+            gbc.gridy = 2;
+            gbc.gridwidth = 1;
+            gbc.weightx = 1;
+            gbc.weighty = 1;
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            gbc.anchor = GridBagConstraints.NORTH;
+            gbc.insets = insets;
 
-			// Initialize the loading mod number label.
-			final JLabel message = new JLabel("--", SwingConstants.CENTER);
-			loadingFrame.add(message, gbc);
-			gbc = new GridBagConstraints();
+            // Initialize the loading mod number label.
+            final JLabel message = new JLabel("--", SwingConstants.CENTER);
+            loadingFrame.add(message, gbc);
+            gbc = new GridBagConstraints();
 
-			gbc.gridx = 0;
-			gbc.gridy = 3;
-			gbc.gridwidth = 1;
-			gbc.weightx = 1;
-			gbc.weighty = 1;
-			gbc.fill = GridBagConstraints.HORIZONTAL;
-			gbc.anchor = GridBagConstraints.NORTH;
-			gbc.insets = insets;
+            gbc.gridx = 0;
+            gbc.gridy = 3;
+            gbc.gridwidth = 1;
+            gbc.weightx = 1;
+            gbc.weighty = 1;
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            gbc.anchor = GridBagConstraints.NORTH;
+            gbc.insets = insets;
 
-			// Initialize the the loading mod name label.
-			final JLabel name = new JLabel("--", SwingConstants.CENTER);
-			loadingFrame.add(name,gbc);
-			loadingFrame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-			loadingFrame.addWindowListener(new Listeners.ExitListener(this));
-			loadingFrame.setIconImage(frame.getIconImage());
-			loadingFrame.pack();
-			loadingFrame.setResizable(false);
-			loadingFrame.setLocationRelativeTo(null);
-			loadingFrame.setVisible(true);
+            // Initialize the the loading mod name label.
+            final JLabel name = new JLabel("--", SwingConstants.CENTER);
+            loadingFrame.add(name, gbc);
+            loadingFrame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+            loadingFrame.addWindowListener(new Listeners.ExitListener(this));
+            loadingFrame.setIconImage(frame.getIconImage());
+            loadingFrame.pack();
+            loadingFrame.setResizable(false);
+            loadingFrame.setLocationRelativeTo(null);
+            loadingFrame.setVisible(true);
 
-			// Load the mods from the config file.
-			tableData = loadMods(message, name);
-			// Happens in the window is closed.
-			if (!loadingFrame.isVisible()) throw new Texture_Patcher_Exception(this, ErrorType.WINDOW_CLOSED, null);
-			// Load the modpacks from the config file.
-			loadModpacks(message, name);
-			// Happens in the window is closed.
-			if (!loadingFrame.isVisible()) throw new Texture_Patcher_Exception(this, ErrorType.WINDOW_CLOSED, null);
-			// Return to the frame.
-			loadingFrame.dispose();
-			frame.requestFocus();
-		} catch (final Texture_Patcher_Exception e) {
-			// Happens for TPE's thrown during mod loading or modpack loading.
-			throw e;
-		} catch (final Exception e) {
-			// Happens if an error occurs while loading the mods.
-			throw new Texture_Patcher_Exception(this, ErrorType.FILE_LOADING_FAILED, e);
-		}
-	}
+            // Load the mods from the config file.
+            tableData = loadMods(message, name);
+            // Happens in the window is closed.
+            if (!loadingFrame.isVisible()) throw new Texture_Patcher_Exception(this, ErrorType.WINDOW_CLOSED, null);
+            // Load the modpacks from the config file.
+            loadModpacks(message, name);
+            // Happens in the window is closed.
+            if (!loadingFrame.isVisible()) throw new Texture_Patcher_Exception(this, ErrorType.WINDOW_CLOSED, null);
+            // Return to the frame.
+            loadingFrame.dispose();
+            frame.requestFocus();
+        } catch (final Texture_Patcher_Exception e) {
+            // Happens for TPE's thrown during mod loading or modpack loading.
+            throw e;
+        } catch (final Exception e) {
+            // Happens if an error occurs while loading the mods.
+            throw new Texture_Patcher_Exception(this, ErrorType.FILE_LOADING_FAILED, e);
+        }
+    }
 
-	protected Object[][] loadMods (final JLabel message, final JLabel title) throws Texture_Patcher_Exception {
-		try {
-			// Stores each row as an array of the column values.
-			final ArrayList<Object[]> rows = new ArrayList<Object[]>();
-			int count = 0;
-			// Sort the JSON object.
-			@SuppressWarnings("unchecked")
-			final TreeMap<Object, Object> tmods = new TreeMap<Object, Object>(mods);
-			for (final Object mod : tmods.keySet()) {
-				// If the window was closed.
-				if (!loadingFrame.isVisible()) {
-					break;
-				}
-				// URL of the mod zip.
-				final URL zipurl = new URL((String) options.get("zipsurl") + ((String) mod).replace(" ", "_") + ".zip");
-				try {
+    protected Object[][] loadMods(final JLabel message, final JLabel title) throws Texture_Patcher_Exception {
+        try {
+            // Stores each row as an array of the column values.
+            final ArrayList<Object[]> rows = new ArrayList<Object[]>();
+            int count = 0;
+            // Sort the JSON object.
+            @SuppressWarnings("unchecked")
+            final TreeMap<Object, Object> tmods = new TreeMap<Object, Object>(mods);
+            for (final Object mod : tmods.keySet()) {
+                // If the window was closed.
+                if (!loadingFrame.isVisible()) {
+                    break;
+                }
+                // URL of the mod zip.
+                final URL zipurl = new URL((String) options.get("zipsurl") + ((String) mod).replace(" ", "_") + ".zip");
+                try {
                     URLConnection connection = zipurl.openConnection();
-                    connection.setRequestProperty("User-Agent","Mozilla/5.0 ( compatible ) ");
-                    connection.setRequestProperty("Accept","*/*");
-					// Check if the file exists.
-					connection.getInputStream().close();
-					// Collect the data for the table.
-					final Object[] row = new Object[6];
-					row[0] = false;
-					row[1] = mod;
-					row[2] = String.valueOf(((JSONObject) mods.get(mod)).get("version") == null ? "Unknown" : ((JSONObject) mods.get(mod)).get("version"));
-					row[3] = String.valueOf(((JSONObject) mods.get(mod)).get("mcversion") == null ? "Unknown" : ((JSONObject) mods.get(mod)).get("mcversion"));
-					final int size = connection.getContentLength();
+                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 ( compatible ) ");
+                    connection.setRequestProperty("Accept", "*/*");
+                    // Check if the file exists.
+                    connection.getInputStream().close();
+                    // Collect the data for the table.
+                    final Object[] row = new Object[6];
+                    row[0] = false;
+                    row[1] = mod;
+                    row[2] = String.valueOf(((JSONObject) mods.get(mod)).get("version") == null ? "Unknown" : ((JSONObject) mods.get(mod)).get("version"));
+                    row[3] = String.valueOf(((JSONObject) mods.get(mod)).get("mcversion") == null ? "Unknown" : ((JSONObject) mods.get(mod)).get("mcversion"));
+                    final int size = connection.getContentLength();
 
-					if (size == -1) {
-						row[4] = "Unknown";
-					} else {
-						if (size > 1024) row[4] = size / 1024 + " kb";
-						else row[4] = String.valueOf(size) + " bytes";
-					}
+                    if (size == -1) {
+                        row[4] = "Unknown";
+                    } else {
+                        if (size > 1024) row[4] = size / 1024 + " kb";
+                        else row[4] = String.valueOf(size) + " bytes";
+                    }
 
-					row[5] = new Date(connection.getLastModified());
-					message.setText("Loading mod # " + ++count);
-					title.setText((String) row[1]);
-					logger.log(Level.INFO, "Loading mod #" + count + ": " + mod + ".");
-					rows.add(row);
-				} catch (final Exception e) {
-					// Happens if any error occurs while loading the mod.
-					logger.log(Level.WARNING, "Unable to load mod " + mod + ".");
-					e.printStackTrace();
-					continue;
-				}
-			}
-			// Collect the rows into an two dimensional array.
-			final Object[][] temp = new Object[rows.size()][];
-			for (int i = 0; i < rows.size(); i++){
-				temp[i]= rows.get(i);
-			}
-			return temp;
-		} catch (final Exception e) {
-			// Happens if an error occurs while loading the mods.
-			throw new Texture_Patcher_Exception(this, ErrorType.MOD_LOADING_FAILED, e);
-		}
-	}
+                    row[5] = new Date(connection.getLastModified());
+                    message.setText("Loading mod # " + ++count);
+                    title.setText((String) row[1]);
+                    logger.log(Level.INFO, "Loading mod #" + count + ": " + mod + ".");
+                    rows.add(row);
+                } catch (final Exception e) {
+                    // Happens if any error occurs while loading the mod.
+                    logger.log(Level.WARNING, "Unable to load mod " + mod + ".");
+                    e.printStackTrace();
+                    continue;
+                }
+            }
+            // Collect the rows into an two dimensional array.
+            final Object[][] temp = new Object[rows.size()][];
+            for (int i = 0; i < rows.size(); i++) {
+                temp[i] = rows.get(i);
+            }
+            return temp;
+        } catch (final Exception e) {
+            // Happens if an error occurs while loading the mods.
+            throw new Texture_Patcher_Exception(this, ErrorType.MOD_LOADING_FAILED, e);
+        }
+    }
 
-	protected void loadModpacks (final JLabel message, final JLabel title) throws Texture_Patcher_Exception {
-		try {
-			// Iterate through the JSON modpack object.
-			int count = 0;
-			for (final Object modpack : modpacks.keySet()) {
-				// If the window was closed.
-				if (!loadingFrame.isVisible()) {
-					break;
-				}
-				try {
-					// Load the modpack and make sure that the modpack file exists.
+    protected void loadModpacks(final JLabel message, final JLabel title) throws Texture_Patcher_Exception {
+        try {
+            // Iterate through the JSON modpack object.
+            int count = 0;
+            for (final Object modpack : modpacks.keySet()) {
+                // If the window was closed.
+                if (!loadingFrame.isVisible()) {
+                    break;
+                }
+                try {
+                    // Load the modpack and make sure that the modpack file exists.
                     URLConnection connection = new URL((String) modpacks.get(modpack)).openConnection();
-                    connection.setRequestProperty("User-Agent","Mozilla/5.0 ( compatible ) ");
-                    connection.setRequestProperty("Accept","*/*");
+                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 ( compatible ) ");
+                    connection.setRequestProperty("Accept", "*/*");
                     connection.getInputStream();
-					message.setText("Loading modpack # " + ++count);
-					title.setText((String) modpack);
-					logger.log(Level.INFO, "Loading modpack #" + count + ": " + modpack + ".");
-				} catch (final Exception e) {
-					// Happens if any error occurs while loading the modpack.
-					e.printStackTrace();
-					logger.log(Level.WARNING, "Unable to load modpack #" + count + ": " + modpack + ".");
-					continue;
-				}
-			}
-		} catch (final Exception e) {
-			// Happens if an error occurs while loading the modpacks.
-			throw new Texture_Patcher_Exception(this, ErrorType.MODPACK_LOADING_FAILED, e);
-		}
-	}
+                    message.setText("Loading modpack # " + ++count);
+                    title.setText((String) modpack);
+                    logger.log(Level.INFO, "Loading modpack #" + count + ": " + modpack + ".");
+                } catch (final Exception e) {
+                    // Happens if any error occurs while loading the modpack.
+                    e.printStackTrace();
+                    logger.log(Level.WARNING, "Unable to load modpack #" + count + ": " + modpack + ".");
+                    continue;
+                }
+            }
+        } catch (final Exception e) {
+            // Happens if an error occurs while loading the modpacks.
+            throw new Texture_Patcher_Exception(this, ErrorType.MODPACK_LOADING_FAILED, e);
+        }
+    }
 
-	protected void initializeComponents () throws Texture_Patcher_Exception {
-		try {
-			// Initialize the path text field.
-			final Insets insets = new Insets(1, 3, 1, 3);
-			GridBagConstraints gbc = new GridBagConstraints();
+    protected void initializeComponents() throws Texture_Patcher_Exception {
+        try {
+            // Initialize the path text field.
+            final Insets insets = new Insets(1, 3, 1, 3);
+            GridBagConstraints gbc = new GridBagConstraints();
 
-			gbc.gridx = 0;
-			gbc.gridy = 0;
-			gbc.gridwidth = 4;
-			gbc.weightx = 4;
-			gbc.weighty = 0;
-			gbc.fill = GridBagConstraints.HORIZONTAL;
-			gbc.anchor = GridBagConstraints.NORTH;
-			gbc.insets = insets;
+            gbc.gridx = 0;
+            gbc.gridy = 0;
+            gbc.gridwidth = 4;
+            gbc.weightx = 4;
+            gbc.weighty = 0;
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            gbc.anchor = GridBagConstraints.NORTH;
+            gbc.insets = insets;
 
-			path = new JTextField(prefsnode.get("path", ""));
-			path.setEditable(false);
-			frame.add(path, gbc);
-			// Initialize the browse button.
-			gbc = new GridBagConstraints();
+            path = new JTextField(prefsnode.get("path", ""));
+            path.setEditable(false);
+            frame.add(path, gbc);
 
-			gbc.gridx = 0;
-			gbc.gridy = 1;
-			gbc.gridwidth = 1;
-			gbc.weightx = 1;
-			gbc.weighty = 0;
-			gbc.fill = GridBagConstraints.HORIZONTAL;
-			gbc.anchor = GridBagConstraints.NORTH;
-			gbc.insets = insets;
+            // Initialize the browse button.
+            gbc = new GridBagConstraints();
 
-			final JButton browse = new JButton("Browse");
-			browse.addActionListener(new Listeners.BrowseListener(this));
-			frame.add(browse, gbc);
-			// Initialize the download pack button.
-			gbc = new GridBagConstraints();
+            gbc.gridx = 0;
+            gbc.gridy = 1;
+            gbc.gridwidth = 1;
+            gbc.weightx = 1;
+            gbc.weighty = 0;
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            gbc.anchor = GridBagConstraints.NORTH;
+            gbc.insets = insets;
 
-			gbc.gridx = 1;
-			gbc.gridy = 1;
-			gbc.gridwidth = 1;
-			gbc.weightx = 1;
-			gbc.weighty = 0;
-			gbc.fill = GridBagConstraints.HORIZONTAL;
-			gbc.anchor = GridBagConstraints.NORTH;
-			gbc.insets = insets;
+            final JButton browse = new JButton("Browse");
+            browse.addActionListener(new Listeners.BrowseListener(this));
+            frame.add(browse, gbc);
 
-			final JButton downloadPack = new JButton("Download Pack");
-			downloadPack.addActionListener(new Listeners.DownloadPackListener(this));
-			frame.add(downloadPack, gbc);
-			// Initialize the check for updates button.
-			gbc = new GridBagConstraints();
+            // Initialize the download pack button.
+            gbc = new GridBagConstraints();
 
-			gbc.gridx = 2;
-			gbc.gridy = 1;
-			gbc.gridwidth = 1;
-			gbc.weightx = 1;
-			gbc.weighty = 0;
-			gbc.fill = GridBagConstraints.HORIZONTAL;
-			gbc.anchor = GridBagConstraints.NORTH;
-			gbc.insets = insets;
+            gbc.gridx = 1;
+            gbc.gridy = 1;
+            gbc.gridwidth = 1;
+            gbc.weightx = 1;
+            gbc.weighty = 0;
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            gbc.anchor = GridBagConstraints.NORTH;
+            gbc.insets = insets;
 
-			checkUpdate = new JButton("Check For Updates");
-			checkUpdate.addActionListener(new Listeners.CheckUpdateListener(this));
-			checkUpdate.setEnabled(false);
-			frame.add(checkUpdate, gbc);
-			// Initialize the patch button.
-			gbc = new GridBagConstraints();
+            final JButton downloadPack = new JButton("Download Pack");
+            downloadPack.addActionListener(new Listeners.DownloadPackListener(this));
+            frame.add(downloadPack, gbc);
 
-			gbc.gridx = 3;
-			gbc.gridy = 1;
-			gbc.gridwidth = 1;
-			gbc.weightx = 1;
-			gbc.weighty = 0;
-			gbc.fill = GridBagConstraints.HORIZONTAL;
-			gbc.anchor = GridBagConstraints.NORTH;
-			gbc.insets = insets;
+            // Initialize the check for updates button.
+            gbc = new GridBagConstraints();
 
-			patch = new JButton("Patch");
-			patch.addActionListener(new Listeners.PatchListener(this));
-			patch.setEnabled(false);
-			frame.add(patch, gbc);
-			// Resolve the preferences stored path and make sure it exists.
-			if (!path.getText().equals("") && new File(path.getText()).exists()) {
-				checkUpdate.setEnabled(true);
-				patch.setEnabled(true);
-			} else {
-				prefsnode.remove("path");
-				path.setText("");
-			}
-			// Initialize the table.
-			gbc = new GridBagConstraints();
+            gbc.gridx = 2;
+            gbc.gridy = 1;
+            gbc.gridwidth = 1;
+            gbc.weightx = 1;
+            gbc.weighty = 0;
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            gbc.anchor = GridBagConstraints.NORTH;
+            gbc.insets = insets;
 
-			gbc.gridx = 0;
-			gbc.gridy = 2;
-			gbc.gridwidth = 4;
-			gbc.weightx = 4;
-			gbc.weighty = 1;
-			gbc.fill = GridBagConstraints.BOTH;
-			gbc.anchor = GridBagConstraints.NORTH;
-			gbc.insets = insets;
+            checkUpdate = new JButton("Check For Updates");
+            checkUpdate.addActionListener(new Listeners.CheckUpdateListener(this));
+            checkUpdate.setEnabled(false);
+            frame.add(checkUpdate, gbc);
 
-			table = new JTable(new TableModel(tableData));
-			table.setFillsViewportHeight(true);
-			table.setAutoCreateRowSorter(true);
-			table.getTableHeader().setReorderingAllowed(false);
-			table.getColumnModel().getColumn(0).setMaxWidth(25);
-			table.addMouseListener(new Listeners.TableListener(this));
+            // Initialize the patch button.
+            gbc = new GridBagConstraints();
 
-			frame.add(new JScrollPane(table), gbc);
-			// Initialize the menu.
-			final JMenuBar menubar = new JMenuBar();
-			final JMenu menu = new JMenu("File");
-			if ((String) options.get("url") != null) {
-				final JMenuItem website = new JMenuItem((String) options.get("name") + " Website");
-				website.addActionListener(new Listeners.WebsiteListener(this));
-				menu.add(website);
-			}
+            gbc.gridx = 3;
+            gbc.gridy = 1;
+            gbc.gridwidth = 1;
+            gbc.weightx = 1;
+            gbc.weighty = 0;
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            gbc.anchor = GridBagConstraints.NORTH;
+            gbc.insets = insets;
 
-			menu.addSeparator();
-			final ButtonGroup group = new ButtonGroup();
-			// Load the modpack menu items.
-			JRadioButtonMenuItem modpacksitems;
-			if (modpacks != null) {
-				@SuppressWarnings("unchecked")
-				final TreeMap<Object, Object> tmodpacks = new TreeMap<Object, Object>(modpacks);
-				for (final Object modpack : tmodpacks.keySet()) {
-					modpacksitems = new JRadioButtonMenuItem((String) modpack);
-					modpacksitems.setSelected(false);
-					modpacksitems.addActionListener(new Listeners.ModpackListener(this));
-					group.add(modpacksitems);
-					menu.add(modpacksitems);
-				}
-				if (!modpacks.isEmpty()) menu.addSeparator();
-			}
-			JRadioButtonMenuItem selectitems;
-			selectitems = new JRadioButtonMenuItem("Select All");
-			selectitems.setSelected(false);
-			selectitems.addActionListener(new Listeners.ModpackListener(this));
-			group.add(selectitems);
-			menu.add(selectitems);
-			selectitems = new JRadioButtonMenuItem("Select None");
-			selectitems.setSelected(true);
-			selectitems.addActionListener(new Listeners.ModpackListener(this));
-			group.add(selectitems);
-			menu.add(selectitems);
-			menubar.add(menu);
-			frame.setJMenuBar(menubar);
-		} catch (final Exception e) {
-			// Happens if an error occurs while initializing the components.
-			throw new Texture_Patcher_Exception(this, ErrorType.COMPONENT_INITIALIZATION_FAILED, e);
-		}
-	}
+            patch = new JButton("Patch");
+            patch.addActionListener(new Listeners.PatchListener(this));
+            patch.setEnabled(false);
+            frame.add(patch, gbc);
 
-	protected void checkUpdate () {
-		try {
-			// Check for updates by comparing the internal version number with the server version number.
+            // Resolve the preferences stored path and make sure it exists.
+            if (!path.getText().equals("") && new File(path.getText()).exists()) {
+                checkUpdate.setEnabled(true);
+                patch.setEnabled(true);
+            } else {
+                prefsnode.remove("path");
+                path.setText("");
+            }
+
+            // Initialize the table.
+            gbc = new GridBagConstraints();
+
+            gbc.gridx = 0;
+            gbc.gridy = 2;
+            gbc.gridwidth = 4;
+            gbc.weightx = 4;
+            gbc.weighty = 1;
+            gbc.fill = GridBagConstraints.BOTH;
+            gbc.anchor = GridBagConstraints.NORTH;
+            gbc.insets = insets;
+
+            table = new JTable(new TableModel(tableData));
+            table.setFillsViewportHeight(true);
+            table.setAutoCreateRowSorter(true);
+            table.getTableHeader().setReorderingAllowed(false);
+            table.getColumnModel().getColumn(0).setMaxWidth(25);
+            table.addMouseListener(new Listeners.TableListener(this));
+
+            frame.add(new JScrollPane(table), gbc);
+
+            // Initialize the menu.
+            final JMenuBar menubar = new JMenuBar();
+            final JMenu menu = new JMenu("File");
+            if ((String) options.get("url") != null) {
+                final JMenuItem website = new JMenuItem((String) options.get("name") + " Website");
+                website.addActionListener(new Listeners.WebsiteListener(this));
+                menu.add(website);
+            }
+
+            menu.addSeparator();
+            final ButtonGroup group = new ButtonGroup();
+
+            // Load the modpack menu items.
+            JRadioButtonMenuItem modpacksitems;
+            if (modpacks != null) {
+                @SuppressWarnings("unchecked")
+                final TreeMap<Object, Object> tmodpacks = new TreeMap<Object, Object>(modpacks);
+                for (final Object modpack : tmodpacks.keySet()) {
+                    modpacksitems = new JRadioButtonMenuItem((String) modpack);
+                    modpacksitems.setSelected(false);
+                    modpacksitems.addActionListener(new Listeners.ModpackListener(this));
+                    group.add(modpacksitems);
+                    menu.add(modpacksitems);
+                }
+                if (!modpacks.isEmpty()) menu.addSeparator();
+            }
+            JRadioButtonMenuItem selectitems;
+            selectitems = new JRadioButtonMenuItem("Select All");
+            selectitems.setSelected(false);
+            selectitems.addActionListener(new Listeners.ModpackListener(this));
+            group.add(selectitems);
+            menu.add(selectitems);
+            selectitems = new JRadioButtonMenuItem("Select None");
+            selectitems.setSelected(true);
+            selectitems.addActionListener(new Listeners.ModpackListener(this));
+            group.add(selectitems);
+            menu.add(selectitems);
+            menubar.add(menu);
+            frame.setJMenuBar(menubar);
+        } catch (final Exception e) {
+            // Happens if an error occurs while initializing the components.
+            throw new Texture_Patcher_Exception(this, ErrorType.COMPONENT_INITIALIZATION_FAILED, e);
+        }
+    }
+
+    protected void checkUpdate() {
+        try {
+            // Check for updates by comparing the internal version number with the server version number.
             URLConnection connection = new URL("http://soartex.net/texture-patcher/latestversion.txt").openConnection();
-            connection.setRequestProperty("User-Agent","Mozilla/5.0 ( compatible ) ");
-            connection.setRequestProperty("Accept","*/*");
-			final float latestversion = Float.parseFloat(new BufferedReader(new InputStreamReader(connection.getInputStream())).readLine());
-			if (latestversion > VERSION) {
-				JOptionPane.showMessageDialog(frame, "There is a new version of the patcher available: " + latestversion + " (Current version: " + VERSION + ")\r\n Download the update for the texture artists site, or tell them to update!", "Warning!", JOptionPane.WARNING_MESSAGE);
-			}
-		} catch (final Exception e) {
-			// Happens if any error occurs while checking for updates.
-			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.UPDATE_CHECKING_FAILED, e);
-			logger.log(Level.WARNING, t_p_e.getMessage());
-			t_p_e.printStackTrace();
-			t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
-		}
-	}
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0 ( compatible ) ");
+            connection.setRequestProperty("Accept", "*/*");
+            final float latestversion = Float.parseFloat(new BufferedReader(new InputStreamReader(connection.getInputStream())).readLine());
+            if (latestversion > VERSION) {
+                JOptionPane.showMessageDialog(frame, "There is a new version of the patcher available: " + latestversion + " (Current version: " + VERSION + ")\r\n Download the update for the texture artists site, or tell them to update!", "Warning!", JOptionPane.WARNING_MESSAGE);
+            }
+        } catch (final Exception e) {
+            // Happens if any error occurs while checking for updates.
+            final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.UPDATE_CHECKING_FAILED, e);
+            logger.log(Level.WARNING, t_p_e.getMessage());
+            t_p_e.printStackTrace();
+            t_p_e.showDialog("Warning!", JOptionPane.WARNING_MESSAGE);
+        }
+    }
 
-	protected void createCrashLog () {
-		try {
-			final String filename = "Texture-Patcher-" + VERSION + " (" + new SimpleDateFormat("MM-dd-yyyy HH-mm-ss").format(new Date()) +  ").log";
-			final File file = new File(filename);
-			final PrintWriter out = new PrintWriter(new FileWriter(file));
-			for (final String log : logs) {
-				out.println(log);
-			}
-			out.close();
-			System.out.println("A crash log can be found at " + file.getAbsolutePath() + " !");
-		} catch (final Exception e) {
-			// Happens if an error occurs while create the crash log.
-			final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.CRASH_LOG_CREATING_FAILED, e);
-			t_p_e.printStackTrace();
-		}
-	}
+    protected void createCrashLog() {
+        try {
+            final String filename = "Texture-Patcher-" + VERSION + " (" + new SimpleDateFormat("MM-dd-yyyy HH-mm-ss").format(new Date()) + ").log";
+            final File file = new File(filename);
+            final PrintWriter out = new PrintWriter(new FileWriter(file));
+            for (final String log : logs) {
+                out.println(log);
+            }
+            out.close();
+            System.out.println("A crash log can be found at " + file.getAbsolutePath() + " !");
+        } catch (final Exception e) {
+            // Happens if an error occurs while create the crash log.
+            final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.CRASH_LOG_CREATING_FAILED, e);
+            t_p_e.printStackTrace();
+        }
+    }
 }
