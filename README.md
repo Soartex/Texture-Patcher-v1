@@ -14,7 +14,7 @@ To use this project, just clone the repository and run (make sure you have at le
 gradle clean assemble
 ```
 
-Using the Patcher requires you to host your own config.json, since the soartex ones won't load due a 403 on cloudfare's "human check".
+Using the Patcher requires you (temporary, see [this bug](https://github.com/Soartex-Fanver/Texture-Patcher/issues/57#issuecomment-46576314)) to host your own config.json, since the soartex ones won't load due a 403 on cloudfare's "human check".
 Be sure to write correct URLs in the src/main/resources/externalconfig.txt before you compile. You can add a second line link to your own branches.json.
 I recommend getting the soartex ones:
 
