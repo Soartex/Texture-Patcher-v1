@@ -1,13 +1,9 @@
 package net.soartex.texture_patcher;
 
-import java.awt.Dimension;
+import javax.swing.*;
+import java.awt.*;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-
-import javax.swing.JOptionPane;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.ScrollPaneConstants;
 
 final class Texture_Patcher_Exception extends Exception {
 
