@@ -18,8 +18,7 @@ Using the Patcher requires you (temporary, see [this bug](https://github.com/Soa
 Be sure to write correct URLs in the src/main/resources/externalconfig.txt before you compile. You can add a second line link to your own branches.json.
 I recommend getting the soartex ones:
 
-http://soartex.net/texture-patcher/data/config.json
-http://soartex.net/texture-patcher/data/branches.json
+http://soartex.net/texture-patcher/data/config.json and http://soartex.net/texture-patcher/data/branches.json
 
 Note that you need the get the config(X.X.X).json for each branch you want to have available in the Patcher and the link in the branches.json have to match you hosting location as well. If you want to have only certain ones, just delete the rest and be sure to have vaild json (notice of the ',').
 
