@@ -14,6 +14,8 @@ To use this project, just clone the repository and run (make sure you have at le
 gradle clean assemble
 ```
 
+The patcher uses the default soartex files for now.
+
 
 __This project is compatible with Java 6 and up.__
 
