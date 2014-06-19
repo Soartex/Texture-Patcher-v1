@@ -1,12 +1,11 @@
 ## Texture Pack Patcher
 
-### _Original by REDX36, modified by Chefe_
+### _Original by REDX36, currently maintained by Chefe_
 
 See [soartex website](http://soartex.net/patcher) for more information.
 
 * * *
 
-I forked the original Patcher because I prefer a gradle based build and want to modify some stuff based on my personal preferences.
 
 To use this project, just clone the repository and run (make sure you have at least a gradle wrapper installed)
 
@@ -14,7 +13,7 @@ To use this project, just clone the repository and run (make sure you have at le
 gradle clean assemble
 ```
 
-The patcher uses the default soartex files for now.
+The patcher uses the default soartex downloads, change them in the externalconfig.txt if you want to host your own.
 
 
 __This project is compatible with Java 6 and up.__
