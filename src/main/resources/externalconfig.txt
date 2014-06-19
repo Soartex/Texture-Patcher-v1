@@ -1,2 +1,1 @@
-http://soartex.net/texture-patcher/data/config.json
-http://soartex.net/texture-patcher/data/branches.json
+# Insert your config URLs here
