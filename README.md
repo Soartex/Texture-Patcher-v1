@@ -6,6 +6,8 @@ See [soartex website](http://soartex.net/patcher) for more information.
 
 * * *
 
+I forked the original Patcher because I prefer a gradle based build and want to modify some stuff based on my personal preferences.
+
 To use this project, just clone the repository and run (make sure you have at least a gradle wrapper installed)
 
 ```
