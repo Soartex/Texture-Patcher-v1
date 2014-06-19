@@ -4,6 +4,10 @@
 
 package net.soartex.texture_patcher;
 
+import com.google.common.io.Resources;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
@@ -13,10 +17,10 @@ import java.awt.*;
 import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
@@ -47,6 +51,8 @@ public final class Texture_Patcher implements Runnable {
     protected JButton checkUpdate;
     protected JButton patch;
     protected JTable table;
+
+    OkHttpClient client = new OkHttpClient();
 
     // Public methods
 
@@ -141,9 +147,19 @@ public final class Texture_Patcher implements Runnable {
 
             // Find external config file, first by class loader resource, then by the file system.
             if (getClass().getClassLoader().getResource("externalconfig.txt") != null) {
-                BufferedReader lineIn = new BufferedReader(new InputStreamReader(getClass().getClassLoader().getResource("externalconfig.txt").openStream()));
-                readLine = lineIn.readLine();
-                readLine2 = lineIn.readLine();
+                List<String> cfgLines = Resources.readLines(Resources.getResource("externalconfig.txt"), Charset.defaultCharset());
+
+                LinkedList<String> tmpList = new LinkedList<String>();
+                for (String entry : cfgLines) {
+                    if (entry.startsWith("#") || entry.isEmpty()) {
+                        continue;
+                    }
+
+                    tmpList.add(entry);
+                }
+
+                readLine = tmpList.get(0);
+                readLine2 = tmpList.get(1);
             } else if (!debug) {
                 throw new Texture_Patcher_Exception(this, ErrorType.EXTERNAL_CONFIG_MISSING, null);
             }
@@ -153,20 +169,16 @@ public final class Texture_Patcher implements Runnable {
             if (debug) readLine2 = "http://soartex.net/texture-patcher/data/branches.json";
 
             // If the second config line for branches is not there. Return normal branch
-            if (readLine2 == null || readLine2.equals("")) {
+            if (readLine2 == null || readLine2.isEmpty()) {
                 return readLine;
             }
 
             // Loads the JSON file for branch
-            URLConnection connection = new URL(readLine2).openConnection();
-            connection.setRequestProperty("User-Agent", "Mozilla/5.0 ( compatible ) ");
-            connection.setRequestProperty("Accept", "*/*");
-            config = (JSONObject) new JSONParser().parse(new InputStreamReader(connection.getInputStream()));
+            config = (JSONObject) new JSONParser().parse(getHTTPString(readLine2));
 
-            branches = (JSONObject) config.get("branches");
-
-            // If branch file does not have branches default
-            if (branches == null) {
+            if (config.containsKey("branches")) {
+                branches = (JSONObject) config.get("branches");
+            } else {
                 return readLine;
             }
 
@@ -228,10 +240,7 @@ public final class Texture_Patcher implements Runnable {
             }
 
             // Loads the JSON file.
-            URLConnection connection = new URL(readLine).openConnection();
-            connection.setRequestProperty("User-Agent", "Mozilla/5.0 ( compatible ) ");
-            connection.setRequestProperty("Accept", "*/*");
-            config = (JSONObject) new JSONParser().parse(new InputStreamReader(connection.getInputStream()));
+            config = (JSONObject) new JSONParser().parse(getHTTPString(readLine));
             options = (JSONObject) config.get("options");
             mods = (JSONObject) config.get("mods");
             modpacks = (JSONObject) config.get("modpacks");
@@ -420,18 +429,20 @@ public final class Texture_Patcher implements Runnable {
                 // URL of the mod zip.
                 final URL zipurl = new URL((String) options.get("zipsurl") + ((String) mod).replace(" ", "_") + ".zip");
                 try {
-                    URLConnection connection = zipurl.openConnection();
-                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 ( compatible ) ");
-                    connection.setRequestProperty("Accept", "*/*");
-                    // Check if the file exists.
-                    connection.getInputStream().close();
+                    Response curResp = getHeadResp((String) options.get("zipsurl") + ((String) mod).replace(" ", "_") + ".zip");
+
+                    if (curResp == null || curResp.code() != 200)
+                        continue;
+
                     // Collect the data for the table.
                     final Object[] row = new Object[6];
+
                     row[0] = false;
                     row[1] = mod;
                     row[2] = String.valueOf(((JSONObject) mods.get(mod)).get("version") == null ? "Unknown" : ((JSONObject) mods.get(mod)).get("version"));
                     row[3] = String.valueOf(((JSONObject) mods.get(mod)).get("mcversion") == null ? "Unknown" : ((JSONObject) mods.get(mod)).get("mcversion"));
-                    final int size = connection.getContentLength();
+
+                    final int size = Integer.parseInt(curResp.headers().get("Content-Length"));
 
                     if (size == -1) {
                         row[4] = "Unknown";
@@ -440,10 +451,13 @@ public final class Texture_Patcher implements Runnable {
                         else row[4] = String.valueOf(size) + " bytes";
                     }
 
-                    row[5] = new Date(connection.getLastModified());
+                    row[5] = curResp.headers().getDate("Last-Modified");
+
                     message.setText("Loading mod # " + ++count);
                     title.setText((String) row[1]);
+
                     logger.log(Level.INFO, "Loading mod #" + count + ": " + mod + ".");
+
                     rows.add(row);
                 } catch (final Exception e) {
                     // Happens if any error occurs while loading the mod.
@@ -475,10 +489,11 @@ public final class Texture_Patcher implements Runnable {
                 }
                 try {
                     // Load the modpack and make sure that the modpack file exists.
-                    URLConnection connection = new URL((String) modpacks.get(modpack)).openConnection();
-                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 ( compatible ) ");
-                    connection.setRequestProperty("Accept", "*/*");
-                    connection.getInputStream();
+                    Response curResp = getHeadResp((String) modpacks.get(modpack));
+
+                    if (curResp == null || curResp.code() != 200)
+                        continue;
+
                     message.setText("Loading modpack # " + ++count);
                     title.setText((String) modpack);
                     logger.log(Level.INFO, "Loading modpack #" + count + ": " + modpack + ".");
@@ -658,10 +673,8 @@ public final class Texture_Patcher implements Runnable {
     protected void checkUpdate() {
         try {
             // Check for updates by comparing the internal version number with the server version number.
-            URLConnection connection = new URL("http://soartex.net/texture-patcher/latestversion.txt").openConnection();
-            connection.setRequestProperty("User-Agent", "Mozilla/5.0 ( compatible ) ");
-            connection.setRequestProperty("Accept", "*/*");
-            final float latestversion = Float.parseFloat(new BufferedReader(new InputStreamReader(connection.getInputStream())).readLine());
+            final float latestversion = Float.parseFloat(getHTTPString("http://soartex.net/texture-patcher/latestversion.txt"));
+
             if (latestversion > VERSION) {
                 JOptionPane.showMessageDialog(frame, "There is a new version of the patcher available: " + latestversion + " (Current version: " + VERSION + ")\r\n Download the update for the texture artists site, or tell them to update!", "Warning!", JOptionPane.WARNING_MESSAGE);
             }
@@ -689,5 +702,33 @@ public final class Texture_Patcher implements Runnable {
             final Texture_Patcher_Exception t_p_e = new Texture_Patcher_Exception(this, ErrorType.CRASH_LOG_CREATING_FAILED, e);
             t_p_e.printStackTrace();
         }
+    }
+
+    String getHTTPString(String url) throws IOException {
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+
+        Response response = client.newCall(request).execute();
+        return response.body().string();
+    }
+
+    byte[] getFileBytes(String url) throws IOException {
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+
+        Response response = client.newCall(request).execute();
+        return response.body().bytes();
+    }
+
+    Response getHeadResp(String url) throws IOException {
+        Request request = new Request.Builder()
+                .url(url)
+                .method("HEAD", null)
+                .build();
+
+        Response response = client.newCall(request).execute();
+        return response;
     }
 }
