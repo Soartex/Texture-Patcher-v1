@@ -1,1 +1,0 @@
-# Put the URL of your hosted configuration file here!

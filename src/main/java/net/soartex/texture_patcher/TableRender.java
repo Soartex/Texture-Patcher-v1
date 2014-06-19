@@ -1,12 +1,9 @@
 package net.soartex.texture_patcher;
 
-import java.awt.Color;
-import java.awt.Component;
-import java.util.ArrayList;
-
-import javax.swing.BorderFactory;
-import javax.swing.JTable;
+import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
+import java.awt.*;
+import java.util.ArrayList;
 
 /**
  * Texture_Patcher Cell Coloring

@@ -1,12 +1,20 @@
-## Texture Pack Patcher [![Build Status](https://secure.travis-ci.org/Soartex-Fanver/Texture-Patcher.png?branch=master)](https://travis-ci.org/Soartex-Fanver/Texture-Patcher)
+## Texture Pack Patcher
 
-### _By REDX36_
+### _Original by REDX36_
 
-See [our website](http://soartex.net/texture-patcher) for more information.
+See [soartex website](http://soartex.net/patcher) for more information.
 
 * * *
 
-To use this project, just clone the repository. There is an ANT build script attatched.
+
+To use this project, just clone the repository and run (make sure you have at least a gradle wrapper installed)
+
+```
+gradle clean assemble
+```
+
+The patcher uses the default soartex downloads, change them in the externalconfig.txt if you want to host your own.
+
 
 __This project is compatible with Java 6 and up.__
 
