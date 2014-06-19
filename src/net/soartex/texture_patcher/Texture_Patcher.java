@@ -55,7 +55,7 @@ public final class Texture_Patcher implements Runnable {
 
 	// Program variables.
 	protected final static float VERSION = 2.3F;
-	protected static boolean debug = true;
+	protected static boolean debug = false;
 
 	protected final Preferences prefsnode = Preferences.userNodeForPackage(getClass());
 	protected final Logger logger = Logger.getLogger(getClass().getName() + "." + System.currentTimeMillis());
