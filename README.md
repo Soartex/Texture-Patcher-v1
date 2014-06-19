@@ -1,14 +1,18 @@
-## Texture Pack Patcher [![Build Status](https://secure.travis-ci.org/Soartex-Fanver/Texture-Patcher.png?branch=master)](https://travis-ci.org/Soartex-Fanver/Texture-Patcher)
+## Texture Pack Patcher [![Build Status](https://secure.travis-ci.org/Soartex-Fanver/Texture-Patcher.png?branch=master)](https://travis-ci.org/Soartex-Fanver/Texture-Patcher)  [![Build Status Dev](https://travis-ci.org/Soartex-Fanver/Texture-Patcher.svg?branch=development)](https://travis-ci.org/Soartex-Fanver/Texture-Patcher)
 
-### _By REDX36_
 
-See [our website](http://soartex.net/texture-patcher) for more information.
+See our website for more information. [http://soartex.net/patcher/](http://soartex.net/patcher/)
 
 * * *
 
-To use this project, just clone the repository. There is an ANT build script attatched.
+This is a program made for use with the game minecraft. This patcher allows for players to add modded "patches" to their texture packs. The patcher releases on this repo are prepared so that any organization can set it up with their own server and use the system. 
 
-__This project is compatible with Java 6 and up.__
+####Contributors
+* REDX36
+* GoldBattle
+* artdude543
+* Chefeification
+[More...](https://github.com/Soartex-Fanver/Texture-Patcher/graphs/contributors)
 
 * * *
 
