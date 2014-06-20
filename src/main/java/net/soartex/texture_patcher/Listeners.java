@@ -127,20 +127,17 @@ final class Listeners {
                     // Check mods based on the selected modpack.
                     for (final Object modpack : t_p.modpacks.keySet()) {
                         if (e.getActionCommand().equals(modpack)) {
-                            final BufferedReader in = new BufferedReader(new InputStreamReader(new URL((String) t_p.modpacks.get(modpack)).openStream()));
+                            String[] modList = Texture_Patcher.getHTTPString((String) t_p.modpacks.get(modpack)).split("\\n");
 
                             for (int i = 0; i < t_p.tableData.length; i++) {
-
                                 t_p.tableData[i][0] = false;
-
                             }
 
                             t_p.table.updateUI();
 
-                            String readline;
-                            while ((readline = in.readLine()) != null) {
+                            for (String str : modList) {
                                 for (int i = 0; i < t_p.tableData.length; i++) {
-                                    if (readline.replace("_", " ").equals(t_p.tableData[i][1])) {
+                                    if (str.replace("_", " ").equals(t_p.tableData[i][1])) {
                                         t_p.tableData[i][0] = true;
                                     }
                                 }
@@ -165,6 +162,7 @@ final class Listeners {
     protected static final class BrowseListener implements ActionListener {
 
         protected final Texture_Patcher t_p;
+
         protected BrowseListener(final Texture_Patcher t_p) {
             // Receive the texture patcher instance for the listener.
             this.t_p = t_p;
@@ -238,6 +236,7 @@ final class Listeners {
         protected final Texture_Patcher t_p;
         protected ProgressDialog progressdialog;
         protected File file;
+
         protected DownloadPackListener(final Texture_Patcher t_p) {
             // Receive the texture patcher instance for the listener.
             this.t_p = t_p;
@@ -413,6 +412,7 @@ final class Listeners {
         protected final Texture_Patcher t_p;
         protected long time;
         protected File TEMP_C;
+
         protected CheckUpdateListener(final Texture_Patcher t_p) {
             // Receive the texture patcher instance for the listener.
             this.t_p = t_p;
@@ -526,8 +526,7 @@ final class Listeners {
                                 // Add if it needs to be updated
                                 updates.add((String) row[1]);
                                 rows1.add(counter);
-                            }
-                            else {
+                            } else {
                                 // Add to generic list of what is installed
                                 rows2.add(counter);
                             }

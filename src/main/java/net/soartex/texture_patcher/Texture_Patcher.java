@@ -52,7 +52,7 @@ public final class Texture_Patcher implements Runnable {
     protected JButton patch;
     protected JTable table;
 
-    OkHttpClient client = new OkHttpClient();
+    static OkHttpClient client = new OkHttpClient();
 
     // Public methods
 
@@ -704,7 +704,7 @@ public final class Texture_Patcher implements Runnable {
         }
     }
 
-    String getHTTPString(String url) throws IOException {
+    protected static String getHTTPString(String url) throws IOException {
         Request request = new Request.Builder()
                 .url(url)
                 .build();
@@ -713,7 +713,7 @@ public final class Texture_Patcher implements Runnable {
         return response.body().string();
     }
 
-    byte[] getFileBytes(String url) throws IOException {
+    protected static byte[] getFileBytes(String url) throws IOException {
         Request request = new Request.Builder()
                 .url(url)
                 .build();
@@ -722,7 +722,7 @@ public final class Texture_Patcher implements Runnable {
         return response.body().bytes();
     }
 
-    Response getHeadResp(String url) throws IOException {
+    protected static Response getHeadResp(String url) throws IOException {
         Request request = new Request.Builder()
                 .url(url)
                 .method("HEAD", null)
