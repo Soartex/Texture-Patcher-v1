@@ -28,7 +28,7 @@ import java.util.prefs.Preferences;
 
 public final class Texture_Patcher implements Runnable {
     // Program variables.
-    protected final static float VERSION = 2.3F;
+    protected final static float VERSION = 2.4F;
     protected static boolean debug = false;
 
     protected final Preferences prefsnode = Preferences.userNodeForPackage(getClass());
